@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { gradeLabel, type Hanja, type Word } from './types'
+import { gradeLabel, type Hanja, type Pos, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
   const r = [...a]
@@ -42,25 +42,36 @@ function WordBoard({ word: [w, r, m] }: { word: Word }) {
   )
 }
 
+const POS_LABEL: Record<Pos, string> = { t: '위', b: '아래', l: '왼쪽', r: '오른쪽', w: '감싸기' }
+
 export default function Compose({ target, pool, onBack }: { target: Hanja; pool: Hanja[]; onBack: () => void }) {
   const tiles = useMemo(() => makeTiles(target, pool), [target, pool])
-  const [placed, setPlaced] = useState<string[]>([])
-  const [wrong, setWrong] = useState<string | null>(null)
+  const slots = target.add.map((part, i) => ({ part, pos: target.pos[i] ?? 't' }))
+  const [placed, setPlaced] = useState<(string | null)[]>(() => slots.map(() => null))
+  const [phase, setPhase] = useState<'play' | 'merge' | 'done'>(target.base ? 'play' : 'done')
+  const [wrong, setWrong] = useState<{ tile: string; slot: number | null } | null>(null)
+  const [picked, setPicked] = useState<string | null>(null) // 탭 방식: 보탬글자를 고른 뒤 자리를 탭
   const [drag, setDrag] = useState<{ t: string; x: number; y: number } | null>(null)
   const [panel, setPanel] = useState<HTMLElement | null>(null)
-  const dropRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => setPanel(document.getElementById('add-panel')), [])
 
   const isSeed = !target.base
-  const done = isSeed || placed.length === target.add.length
+  const done = phase === 'done'
 
-  const tryPlace = (t: string) => {
-    if (done) return
-    if (target.add.includes(t) && !placed.includes(t)) setPlaced((p) => [...p, t])
-    else {
-      setWrong(t)
+  const place = (t: string, i: number) => {
+    if (phase !== 'play' || placed[i]) return
+    if (slots[i].part !== t) {
+      setWrong({ tile: t, slot: i })
       setTimeout(() => setWrong(null), 450)
+      return
+    }
+    const next = placed.map((p, k) => (k === i ? t : p))
+    setPlaced(next)
+    setPicked(null)
+    if (next.every(Boolean)) {
+      setTimeout(() => setPhase('merge'), 250)
+      setTimeout(() => setPhase('done'), 950)
     }
   }
 
@@ -68,48 +79,69 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
     e.preventDefault()
     const start = { x: e.clientX, y: e.clientY }
     let moved = false
-    setDrag({ t, x: e.clientX, y: e.clientY })
     const move = (ev: PointerEvent) => {
       if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 6) moved = true
-      setDrag({ t, x: ev.clientX, y: ev.clientY })
+      if (moved) setDrag({ t, x: ev.clientX, y: ev.clientY })
     }
     const up = (ev: PointerEvent) => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       setDrag(null)
-      const r = dropRef.current?.getBoundingClientRect()
-      const inside = r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom
-      if (inside || !moved) tryPlace(t) // 드래그 또는 탭으로 넣기
+      if (!moved) {
+        setPicked((p) => (p === t ? null : t))
+        return
+      }
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('[data-slot]')
+      if (el) place(t, Number(el.dataset.slot))
+      else {
+        setWrong({ tile: t, slot: null })
+        setTimeout(() => setWrong(null), 450)
+      }
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
   }
+
+  const slotEl = (i: number) => {
+    const s = slots[i]
+    const p = placed[i]
+    return (
+      <div
+        key={i}
+        data-slot={i}
+        className={`slot pos-${s.pos} ${p ? 'filled' : ''} ${wrong?.slot === i ? 'shake' : ''} ${picked && !p ? 'ready' : ''} ${phase === 'merge' ? 'merge' : ''}`}
+        onClick={() => picked && place(picked, i)}
+      >
+        {p ? <span className={isText(p) ? 'txt' : 'hz'}>{p}</span> : '?'}
+        <span className="slot-label">{POS_LABEL[s.pos]}</span>
+      </div>
+    )
+  }
+  const wrapIdx = slots.findIndex((s) => s.pos === 'w')
 
   return (
     <div className="compose">
       <button className="back" onClick={onBack}>← 목록</button>
 
       {!isSeed && (
-        <div ref={dropRef} className={`drop ${drag ? 'armed' : ''} ${done ? 'done' : ''}`}>
+        <div className={`drop ${drag ? 'armed' : ''} ${done ? 'done' : ''}`}>
           {done ? (
             <span className="hz huge pop">{target.h}</span>
           ) : (
-            <div className="formula">
-              <span className="hz huge base">{target.base}</span>
-              {target.add.map((_, i) => (
-                <span key={i} className="plus-slot">
-                  <span className="plus">+</span>
-                  <span className={`slot ${placed[i] ? 'filled' : ''}`}>
-                    {placed[i] ? <span className={isText(placed[i]) ? 'txt' : 'hz'}>{placed[i]}</span> : '?'}
-                  </span>
-                </span>
-              ))}
+            <div className="cross">
+              {slots.map((s, i) => (s.pos === 'w' ? null : slotEl(i)))}
+              <div className={`center ${phase === 'merge' ? 'merge' : ''}`}>
+                <span className="hz huge base">{target.base}</span>
+                {wrapIdx >= 0 && slotEl(wrapIdx)}
+              </div>
             </div>
           )}
           <p className="drop-hint">
             {done
               ? `${target.base} + ${target.add.join(' + ')} = ${target.h}`
-              : '오른쪽 보탬글자를 끌어다 놓아 글자를 완성하세요'}
+              : picked
+                ? `'${picked}'를 놓을 자리를 누르세요`
+                : '보탬글자를 알맞은 자리에 끌어다 놓으세요'}
           </p>
         </div>
       )}
@@ -142,8 +174,8 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
               return (
                 <button
                   key={t}
-                  className={`tile ${used ? 'used' : ''} ${wrong === t ? 'shake' : ''}`}
-                  disabled={used || done}
+                  className={`tile ${used ? 'used' : ''} ${picked === t ? 'picked' : ''} ${wrong?.tile === t ? 'shake' : ''}`}
+                  disabled={used || phase !== 'play'}
                   onPointerDown={onPointerDown(t)}
                 >
                   <span className={isText(t) ? 'txt' : 'hz'}>{t}</span>

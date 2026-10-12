@@ -1,4 +1,7 @@
-export type Word = [word: string, reading: string, meaning: string]
+// 위, 아래, 왼쪽, 오른쪽, 감싸기(囗·辶·广·門처럼 기준글자를 둘러쌈)
+export type Pos = 't' | 'b' | 'l' | 'r' | 'w'
+
+export type Word =[word: string, reading: string, meaning: string]
 
 export interface Hanja {
   h: string // 한자
@@ -10,6 +13,7 @@ export interface Hanja {
   rad: string // 부수
   base: string | null // 기준글자 (씨앗이면 null)
   add: string[] // 보탬글자
+  pos: Pos[] // 보탬글자 위치 (add와 같은 순서)
   w: Word[] // 예시 단어
   note?: string
 }
