@@ -130,7 +130,7 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
     )
   }
 
-  const stepLabel = { compose: '보탬글자를 알맞은 자리에', eum: '음을 고르세요', meaning: '뜻을 고르세요' }[step]
+  const stepLabel = { compose: '', eum: '음을 고르세요', meaning: '뜻을 고르세요' }[step] // 조합 안내는 조합 칸 아래에 이미 있음
 
   return (
     <div className="quiz">
@@ -145,7 +145,7 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
         <span style={{ width: `${(idx / questions.length) * 100}%` }} />
       </div>
       <p className="quiz-hint">💡 {loadHint(q.h)}</p>
-      <p className="step-label">{stepLabel}</p>
+      {stepLabel && <p className="step-label">{stepLabel}</p>}
 
       {step === 'compose' ? (
         <Compose key={`${round}-${q.h}`} target={q} pool={all} onSolved={next} onMiss={() => markMiss('compose')} />
