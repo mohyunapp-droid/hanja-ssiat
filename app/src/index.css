@@ -161,10 +161,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   font-size: 11px;
   color: var(--ok);
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  text-align: center;
+  line-height: 1.35;
+  padding: 2px 6px 18px;
 }
 .icon {
   position: absolute;

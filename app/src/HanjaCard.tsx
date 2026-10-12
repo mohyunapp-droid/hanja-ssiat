@@ -81,7 +81,7 @@ export default function HanjaCard({ h, onOpen }: { h: Hanja; onOpen: () => void 
           <input
             ref={inputRef}
             value={hint}
-            maxLength={20}
+            maxLength={60}
             placeholder="연상 단어"
             onChange={(e) => setHint(e.target.value)}
             onBlur={commit}
