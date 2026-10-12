@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gradeLabel, type Hanja } from './types'
 
 // 연상 단어는 이 기기 브라우저에만 저장 (나중에 계정 동기화로 옮길 수 있음)
@@ -23,11 +23,22 @@ export default function HanjaCard({ h, onOpen }: { h: Hanja; onOpen: () => void 
   const [hint, setHint] = useState(() => loadHint(h.h))
   const [editing, setEditing] = useState(false)
   const [shown, setShown] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (editing) inputRef.current?.focus()
+    const el = inputRef.current
+    if (!editing || !el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
   }, [editing])
+
+  // 가로는 고정, 글자가 늘어나면 세로로 늘어나게
+  useLayoutEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [hint, editing])
 
   const commit = () => {
     const v = hint.trim()
@@ -78,12 +89,19 @@ export default function HanjaCard({ h, onOpen }: { h: Hanja; onOpen: () => void 
             commit()
           }}
         >
-          <input
+          <textarea
             ref={inputRef}
             value={hint}
+            rows={1}
             maxLength={60}
             placeholder="연상 단어"
-            onChange={(e) => setHint(e.target.value)}
+            onChange={(e) => setHint(e.target.value.replace(/\n/g, ' '))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                commit()
+              }
+            }}
             onBlur={commit}
           />
         </form>
