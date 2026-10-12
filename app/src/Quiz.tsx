@@ -156,7 +156,7 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
           <div className="choices">
             {choices.map((c) => (
               <button
-                key={c}
+                key={`${step}-${c}`}
                 className={`choice ${picked?.v === c ? (picked.ok ? 'ok' : 'no') : ''}`}
                 onClick={() => choose(c)}
               >
