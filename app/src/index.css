@@ -428,3 +428,4 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .quiz-actions { display: flex; gap: 8px; margin-top: 8px; }
 .quiz-actions button { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); }
 button.primary { background: var(--accent); color: #fff; border-color: var(--accent); padding: 10px 18px; border-radius: 999px; font-weight: 700; }
+.quiz-top-spacer { width: 50px; }

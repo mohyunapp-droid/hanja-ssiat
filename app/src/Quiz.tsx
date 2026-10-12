@@ -37,7 +37,6 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
   const [idx, setIdx] = useState(0)
   const [step, setStep] = useState<Step>(() => firstStep(questions[0]))
   const [miss, setMiss] = useState<Miss>({})
-  const [showHint, setShowHint] = useState(false)
   const [picked, setPicked] = useState<{ v: string; ok: boolean } | null>(null)
   const [finished, setFinished] = useState(false)
 
@@ -73,7 +72,6 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
     setPicked(null)
     if (step === 'compose') return setStep('eum')
     if (step === 'eum') return setStep('meaning')
-    setShowHint(false)
     if (idx + 1 >= questions.length) return setFinished(true)
     setIdx(idx + 1)
     setStep(firstStep(questions[idx + 1]))
@@ -96,7 +94,6 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
     setMiss({})
     setFinished(false)
     setPicked(null)
-    setShowHint(false)
   }
 
   if (finished) {
@@ -142,14 +139,12 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
         <span className="progress">
           {idx + 1} / {questions.length}
         </span>
-        <button className={`icon-btn ${showHint ? 'on' : ''}`} onClick={() => setShowHint((v) => !v)} aria-label="힌트 보기">
-          💡
-        </button>
+        <span className="quiz-top-spacer" />
       </div>
       <div className="progress-bar">
         <span style={{ width: `${(idx / questions.length) * 100}%` }} />
       </div>
-      {showHint && <p className="quiz-hint">{loadHint(q.h)}</p>}
+      <p className="quiz-hint">💡 {loadHint(q.h)}</p>
       <p className="step-label">{stepLabel}</p>
 
       {step === 'compose' ? (
