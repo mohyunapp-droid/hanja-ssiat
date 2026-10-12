@@ -34,9 +34,9 @@ function WordBoard({ word: [w, r, m] }: { word: Word }) {
   }
 
   return (
-    <li className={`word-board ${spinning ? 'spin' : ''}`} role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
+    <li className="word-board" role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
       <span className="hz">{w}</span>
-      <span className={`rd ${shown ? '' : 'hidden'}`}>{shown ? r : '?'}</span>
+      <span className={`rd ${shown ? '' : 'hidden'} ${spinning ? 'spin' : ''}`}>{shown ? r : '?'}</span>
       <span className="mn">{m}</span>
     </li>
   )
