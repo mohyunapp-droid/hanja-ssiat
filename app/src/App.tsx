@@ -2,8 +2,15 @@ import { useMemo, useState } from 'react'
 import raw from './data/hanja.json'
 import { GRADES, gradeLabel, type Group, type Hanja } from './types'
 import Compose from './Compose'
+import HanjaCard from './HanjaCard'
 
 const groups = raw as Group[]
+
+function rowsByEum(seedEum: string, list: Hanja[]) {
+  const rows = new Map<string, Hanja[]>([[seedEum, []]])
+  for (const h of list) rows.set(h.e, [...(rows.get(h.e) ?? []), h])
+  return [...rows.values()].filter((r) => r.length > 0)
+}
 
 export default function App() {
   const [grade, setGrade] = useState<string | null>(null)
@@ -74,14 +81,21 @@ export default function App() {
             </div>
             {visible.length === 0 ? (
               <p className="empty">이 급수에 해당하는 글자가 없어요.</p>
+            ) : group ? (
+              // 씨앗글자와 음이 같은 글자는 첫 줄, 음이 다르면 음별로 다음 줄
+              <div className="rows">
+                {rowsByEum(group.c[0].e, visible).map((row) => (
+                  <div key={row[0].e} className="row">
+                    {row.map((h) => (
+                      <HanjaCard key={h.h} h={h} onOpen={() => setSelected(h)} />
+                    ))}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="grid">
                 {visible.map((h) => (
-                  <button key={h.h} className="card" onClick={() => setSelected(h)}>
-                    <span className="hz big">{h.h}</span>
-                    <span className="eum">{h.e}</span>
-                    <span className="gr">{gradeLabel(h.gr)}</span>
-                  </button>
+                  <HanjaCard key={h.h} h={h} onOpen={() => setSelected(h)} />
                 ))}
               </div>
             )}

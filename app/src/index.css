@@ -132,7 +132,17 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .tag { background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-right: 4px; }
 .empty { color: var(--muted); text-align: center; margin-top: 40px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.rows { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.row .card-wrap { flex: none; width: 92px; }
+.row:first-child { border-bottom: 1px dashed var(--line); padding-bottom: 12px; }
+
+.card-wrap { position: relative; }
 .card {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  min-height: 118px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -144,8 +154,53 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); }
 .card .big { font-size: 40px; line-height: 1.2; }
-.card .eum { font-size: 14px; color: var(--accent); }
+.card .eum { font-size: 14px; color: var(--muted); opacity: 0.5; }
+.card .eum.shown { color: var(--accent); opacity: 1; font-weight: 700; animation: pop 0.25s; }
 .card .gr { font-size: 11px; color: var(--muted); }
+.card .hint-text {
+  font-size: 11px;
+  color: var(--ok);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+.icon {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  opacity: 0.45;
+  transition: opacity 0.15s, background 0.15s;
+}
+.icon:hover, .icon.has, .icon.on { opacity: 1; }
+.icon:hover { background: var(--panel); }
+.hint-btn { top: 3px; right: 3px; }
+.eum-btn { bottom: 3px; right: 3px; }
+.hint-pop {
+  margin-top: 4px;
+  padding: 3px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+}
+.hint-pop input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+.row { align-items: flex-start; }
 
 .compose { display: flex; flex-direction: column; gap: 14px; }
 .back { align-self: flex-start; font-size: 14px; color: var(--muted); padding: 4px 0; }
@@ -220,6 +275,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   .board { padding: 10px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }
   .card .big { font-size: 32px; }
+  .row .card-wrap { width: 80px; }
+  .card { min-height: 108px; }
   .words li { grid-template-columns: auto 1fr; }
   .words .mn { grid-column: 1 / -1; }
 }
