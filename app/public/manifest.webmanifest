@@ -1,0 +1,10 @@
+{
+  "name": "한자 씨앗",
+  "short_name": "한자씨앗",
+  "description": "씨앗글자에 보탬글자를 더해 한자를 익히는 앱",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#a8323a",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
