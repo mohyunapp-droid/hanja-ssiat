@@ -415,8 +415,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 }
 .choice:hover { border-color: var(--accent); }
 .choice.ok { background: var(--ok); border-color: var(--ok); color: #fff; animation: pop 0.3s; }
-.choice.no { border-color: var(--accent); color: var(--accent); animation: shake 0.4s; opacity: 0.6; }
-.choice.fade { opacity: 0.35; }
+.choice.no { border-color: var(--accent); color: var(--accent); animation: shake 0.4s; }
 .quiz-empty, .quiz-result { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 24px 8px; }
 .quiz-empty p { margin: 0; word-break: keep-all; }
 .score { font-size: 22px; color: var(--muted); }
