@@ -3,8 +3,10 @@ import raw from './data/hanja.json'
 import { GRADES, gradeLabel, type Group, type Hanja } from './types'
 import Compose from './Compose'
 import HanjaCard from './HanjaCard'
+import Quiz from './Quiz'
 
 const groups = raw as Group[]
+const allChars = groups.flatMap((g) => g.c)
 
 function rowsByEum(seedEum: string, list: Hanja[]) {
   const rows = new Map<string, Hanja[]>([[seedEum, []]])
@@ -16,6 +18,7 @@ export default function App() {
   const [grade, setGrade] = useState<string | null>(null)
   const [groupId, setGroupId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Hanja | null>(null)
+  const [quiz, setQuiz] = useState(false)
 
   const group = groups.find((g) => g.g === groupId) ?? null
   const byGrade = (h: Hanja) => !grade || h.gr === grade
@@ -29,10 +32,12 @@ export default function App() {
   const pickSeed = (g: Group) => {
     setGroupId(g.g === groupId ? null : g.g)
     setSelected(null)
+    setQuiz(false)
   }
   const pickGrade = (g: string | null) => {
     setGrade(g)
     setSelected(null)
+    setQuiz(false)
   }
 
   return (
@@ -66,8 +71,16 @@ export default function App() {
       </aside>
 
       <main className="board">
-        {selected ? (
-          <Compose key={selected.h} target={selected} pool={group ? group.c : visible} onBack={() => setSelected(null)} />
+        {quiz ? (
+          <Quiz all={allChars} onExit={() => setQuiz(false)} />
+        ) : selected ? (
+          <Compose
+            key={selected.h}
+            target={selected}
+            pool={group ? group.c : visible}
+            onBack={() => setSelected(null)}
+            onQuiz={() => setQuiz(true)}
+          />
         ) : (
           <>
             <div className="board-head">
@@ -108,7 +121,9 @@ export default function App() {
       </aside>
 
       <footer className="sound" aria-label="한자음">
-        {selected ? (
+        {quiz ? (
+          <span className="hint">💡 힌트를 적은 한자로 문제를 풀고 있어요</span>
+        ) : selected ? (
           <>
             <span className="hz">{selected.h}</span>
             <span className="hun">{selected.hun.join(', ')}</span>

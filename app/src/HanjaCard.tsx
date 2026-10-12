@@ -1,23 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gradeLabel, type Hanja } from './types'
-
-// 연상 단어는 이 기기 브라우저에만 저장 (나중에 계정 동기화로 옮길 수 있음)
-const hintKey = (h: string) => `hint:${h}`
-const loadHint = (h: string) => {
-  try {
-    return localStorage.getItem(hintKey(h)) ?? ''
-  } catch {
-    return ''
-  }
-}
-const saveHint = (h: string, v: string) => {
-  try {
-    if (v) localStorage.setItem(hintKey(h), v)
-    else localStorage.removeItem(hintKey(h))
-  } catch {
-    /* 저장 불가 환경은 무시 */
-  }
-}
+import { loadHint, saveHint } from './hints'
 
 export default function HanjaCard({ h, onOpen }: { h: Hanja; onOpen: () => void }) {
   const [hint, setHint] = useState(() => loadHint(h.h))

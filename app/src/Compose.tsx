@@ -44,7 +44,16 @@ function WordBoard({ word: [w, r, m] }: { word: Word }) {
 
 const POS_LABEL: Record<Pos, string> = { t: '위', b: '아래', l: '왼쪽', r: '오른쪽', w: '감싸기' }
 
-export default function Compose({ target, pool, onBack }: { target: Hanja; pool: Hanja[]; onBack: () => void }) {
+interface Props {
+  target: Hanja
+  pool: Hanja[]
+  onBack?: () => void
+  onQuiz?: () => void
+  onSolved?: () => void // 문제풀기 모드: 완성되면 호출, 상세 정보는 숨김
+  onMiss?: () => void
+}
+
+export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss }: Props) {
   const tiles = useMemo(() => makeTiles(target, pool), [target, pool])
   // 정답 자리 + 비어 있는 위·아래·좌·우는 함정 칸(part: null)으로 채워 항상 4칸을 보여줌
   const slots: { part: string | null; pos: Pos }[] = target.add.map((part, i) => ({ part, pos: target.pos[i] ?? 't' }))
@@ -64,6 +73,7 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
   const place = (t: string, i: number) => {
     if (phase !== 'play' || placed[i]) return
     if (slots[i].part !== t) {
+      onMiss?.()
       setWrong({ tile: t, slot: i })
       setTimeout(() => setWrong(null), 450)
       return
@@ -74,6 +84,7 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
     if (slots.every((s, k) => !s.part || next[k])) {
       setTimeout(() => setPhase('merge'), 250)
       setTimeout(() => setPhase('done'), 950)
+      if (onSolved) setTimeout(onSolved, 1600)
     }
   }
 
@@ -123,7 +134,12 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
 
   return (
     <div className="compose">
-      <button className="back" onClick={onBack}>← 목록</button>
+      {!onSolved && (
+        <div className="compose-top">
+          <button className="back" onClick={onBack}>← 목록</button>
+          <button className="quiz-btn" onClick={onQuiz}>✏️ 문제풀기</button>
+        </div>
+      )}
 
       {!isSeed && (
         <div className={`drop ${drag ? 'armed' : ''} ${done ? 'done' : ''}`}>
@@ -148,7 +164,7 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
         </div>
       )}
 
-      {done && (
+      {done && !onSolved && (
         <div className="detail">
           {isSeed && <span className="hz huge">{target.h}</span>}
           <div className="meta">
