@@ -250,6 +250,22 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .words .hz { font-size: 20px; }
 .words .rd { color: var(--accent); font-size: 14px; }
 .words .mn { color: var(--muted); font-size: 14px; }
+.word-board { cursor: pointer; user-select: none; border: 1px solid transparent; transition: border-color 0.15s; }
+.word-board:hover { border-color: var(--accent); }
+.word-board.spin { animation: spin-board 0.6s ease-in-out; }
+.words .rd.hidden {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+@keyframes spin-board {
+  0% { transform: perspective(600px) rotateY(0); }
+  100% { transform: perspective(600px) rotateY(360deg); }
+}
 .note { font-size: 13px; color: var(--muted); margin: 0; }
 
 /* 한자음 */

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { gradeLabel, type Hanja } from './types'
+import { gradeLabel, type Hanja, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
   const r = [...a]
@@ -20,6 +20,27 @@ function makeTiles(target: Hanja, pool: Hanja[]) {
 }
 
 const isText = (s: string) => s.startsWith('(')
+
+// 예시 단어: 읽기를 ?로 가려두고, 누르면 보드가 한 바퀴 돌며 읽기가 나타남
+function WordBoard({ word: [w, r, m] }: { word: Word }) {
+  const [shown, setShown] = useState(false)
+  const [spinning, setSpinning] = useState(false)
+
+  const flip = () => {
+    if (spinning) return
+    setSpinning(true)
+    setTimeout(() => setShown((v) => !v), 200) // 옆면(90°)이 되어 안 보이는 순간에 바꾸기
+    setTimeout(() => setSpinning(false), 600)
+  }
+
+  return (
+    <li className={`word-board ${spinning ? 'spin' : ''}`} role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
+      <span className="hz">{w}</span>
+      <span className={`rd ${shown ? '' : 'hidden'}`}>{shown ? r : '?'}</span>
+      <span className="mn">{m}</span>
+    </li>
+  )
+}
 
 export default function Compose({ target, pool, onBack }: { target: Hanja; pool: Hanja[]; onBack: () => void }) {
   const tiles = useMemo(() => makeTiles(target, pool), [target, pool])
@@ -103,12 +124,8 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
           </div>
           {target.w.length > 0 && (
             <ul className="words">
-              {target.w.map(([w, r, m]) => (
-                <li key={w}>
-                  <span className="hz">{w}</span>
-                  <span className="rd">{r}</span>
-                  <span className="mn">{m}</span>
-                </li>
+              {target.w.map((word) => (
+                <WordBoard key={word[0]} word={word} />
               ))}
             </ul>
           )}
