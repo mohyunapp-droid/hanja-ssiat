@@ -220,13 +220,14 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 /* 위·아래·왼쪽·오른쪽 자리 + 가운데 기준글자 */
 .cross {
   --slot: 64px;
+  --slot-thin: 52px;
   display: grid;
   grid-template-columns: var(--slot) auto var(--slot);
   grid-template-rows: var(--slot) auto var(--slot);
   grid-template-areas: '. t .' 'l c r' '. b .';
   justify-content: center;
-  align-items: center;
-  justify-items: center;
+  align-items: stretch;
+  justify-items: stretch;
   gap: 8px;
 }
 .cross .center { grid-area: c; position: relative; padding: 4px 10px; }
@@ -244,10 +245,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   cursor: pointer;
   transition: transform 0.5s cubic-bezier(0.5, 0, 0.3, 1), opacity 0.5s, background 0.15s, border-color 0.15s;
 }
-.slot.pos-t { grid-area: t; }
-.slot.pos-b { grid-area: b; }
-.slot.pos-l { grid-area: l; }
-.slot.pos-r { grid-area: r; }
+/* 위·아래는 기준글자 너비만큼 가로로 긴, 좌·우는 글자 높이만큼 세로로 긴 직사각형 */
+.slot.pos-t { grid-area: t; width: auto; height: var(--slot-thin); align-self: end; }
+.slot.pos-b { grid-area: b; width: auto; height: var(--slot-thin); align-self: start; }
+.slot.pos-l { grid-area: l; height: auto; width: var(--slot-thin); justify-self: end; }
+.slot.pos-r { grid-area: r; height: auto; width: var(--slot-thin); justify-self: start; }
 .slot.pos-w {
   position: absolute;
   inset: -6px;
@@ -347,7 +349,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   .app { grid-template-columns: 60px 1fr 64px; gap: 6px; padding-left: 6px; padding-right: 6px; }
   .seed .hz { font-size: 24px; }
   .tile { width: 48px; height: 48px; font-size: 24px; }
-  .cross { --slot: 52px; gap: 6px; }
+  .cross { --slot: 46px; --slot-thin: 42px; gap: 6px; }
   .sound .hun { font-size: 17px; }
   .board { padding: 10px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }

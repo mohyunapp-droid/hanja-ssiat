@@ -46,7 +46,9 @@ const POS_LABEL: Record<Pos, string> = { t: '위', b: '아래', l: '왼쪽', r: 
 
 export default function Compose({ target, pool, onBack }: { target: Hanja; pool: Hanja[]; onBack: () => void }) {
   const tiles = useMemo(() => makeTiles(target, pool), [target, pool])
-  const slots = target.add.map((part, i) => ({ part, pos: target.pos[i] ?? 't' }))
+  // 정답 자리 + 비어 있는 위·아래·좌·우는 함정 칸(part: null)으로 채워 항상 4칸을 보여줌
+  const slots: { part: string | null; pos: Pos }[] = target.add.map((part, i) => ({ part, pos: target.pos[i] ?? 't' }))
+  for (const p of ['t', 'b', 'l', 'r'] as const) if (!slots.some((s) => s.pos === p)) slots.push({ part: null, pos: p })
   const [placed, setPlaced] = useState<(string | null)[]>(() => slots.map(() => null))
   const [phase, setPhase] = useState<'play' | 'merge' | 'done'>(target.base ? 'play' : 'done')
   const [wrong, setWrong] = useState<{ tile: string; slot: number | null } | null>(null)
@@ -69,7 +71,7 @@ export default function Compose({ target, pool, onBack }: { target: Hanja; pool:
     const next = placed.map((p, k) => (k === i ? t : p))
     setPlaced(next)
     setPicked(null)
-    if (next.every(Boolean)) {
+    if (slots.every((s, k) => !s.part || next[k])) {
       setTimeout(() => setPhase('merge'), 250)
       setTimeout(() => setPhase('done'), 950)
     }
