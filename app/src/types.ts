@@ -25,4 +25,5 @@ export interface Group {
 
 export const GRADES = ['8', '7', '6', '5', '4II', '4', '3II', '3', '2', '1'] as const
 
-export const gradeLabel = (g: string) => g.replace('II', 'Ⅱ') + '급'
+// '외'는 급수 시험 범위 밖의 글자(제외자)
+export const gradeLabel = (g: string) => (g === '외' ? '급외' : g.replace('II', 'Ⅱ') + '급')

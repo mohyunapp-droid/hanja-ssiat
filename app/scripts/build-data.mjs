@@ -17,6 +17,16 @@ const seen = new Set()
 for (const g of groups) {
   if (seen.has(g.g)) throw new Error(`중복 그룹 ${g.g}`)
   seen.add(g.g)
+  for (const c of g.c) {
+    const bad = (msg) => {
+      throw new Error(`${g.g} ${c.h}: ${msg}`)
+    }
+    if (!c.e || !c.hun?.length || !c.gr || !c.st || !c.rad) bad('필수 항목 누락')
+    if ((c.pos ?? []).length !== c.add.length) bad('add와 pos 개수가 다름')
+    if (new Set(c.pos).size !== c.pos.length) bad('같은 위치에 보탬글자가 둘')
+    if (c.pos.some((p) => !'tblrw'.includes(p))) bad('알 수 없는 위치')
+    if (!c.base && c.add.length) bad('기준글자 없이 보탬글자만 있음')
+  }
 }
 
 mkdirSync(outDir, { recursive: true })
