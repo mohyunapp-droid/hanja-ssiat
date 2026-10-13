@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { gradeLabel, type Hanja } from './types'
+import { gradeLabel, type HanjaLite } from './types'
 import { loadHint, saveHint } from './hints'
 
-export default function HanjaCard({ h, onOpen }: { h: Hanja; onOpen: () => void }) {
+export default function HanjaCard({ h, onOpen }: { h: HanjaLite; onOpen: () => void }) {
   const [hint, setHint] = useState(() => loadHint(h.h))
   const [editing, setEditing] = useState(false)
   const [shown, setShown] = useState(false)

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import Compose from './Compose'
+import GroupCompose from './GroupCompose'
 import { hintedChars, loadHint } from './hints'
-import type { Hanja } from './types'
+import type { Group, HanjaLite as Hanja } from './types'
 
 type Step = 'compose' | 'eum' | 'meaning'
 type Miss = Record<string, Step[]> // 한자별로 처음에 틀린 단계
@@ -31,9 +31,10 @@ function makeQuestions(all: Hanja[]) {
   return list.slice(0, Math.floor(list.length / 3) * 3)
 }
 
-export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void }) {
+export default function Quiz({ groups, onExit }: { groups: Group[]; onExit: () => void }) {
+  const all = useMemo(() => groups.flatMap((g) => g.c), [groups])
   const [round, setRound] = useState(0)
-  const [questions, setQuestions] = useState(() => makeQuestions(all))
+  const [questions, setQuestions] = useState(() => makeQuestions(groups.flatMap((g) => g.c)))
   const [idx, setIdx] = useState(0)
   const [step, setStep] = useState<Step>(() => firstStep(questions[0]))
   const [miss, setMiss] = useState<Miss>({})
@@ -148,7 +149,13 @@ export default function Quiz({ all, onExit }: { all: Hanja[]; onExit: () => void
       {stepLabel && <p className="step-label">{stepLabel}</p>}
 
       {step === 'compose' ? (
-        <Compose key={`${round}-${q.h}`} target={q} pool={all} onSolved={next} onMiss={() => markMiss('compose')} />
+        <GroupCompose
+          key={`${round}-${q.h}`}
+          group={groups.find((g) => g.g === q.g)!}
+          h={q.h}
+          onSolved={next}
+          onMiss={() => markMiss('compose')}
+        />
       ) : (
         <>
           <div className="quiz-char hz">{q.h}</div>

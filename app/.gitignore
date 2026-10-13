@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 빌드 때 data/raw 에서 생성
+public/data

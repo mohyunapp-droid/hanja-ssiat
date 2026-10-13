@@ -1,33 +1,76 @@
-import { useMemo, useState } from 'react'
-import raw from './data/hanja.json'
-import { GRADES, gradeLabel, type Group, type Hanja } from './types'
-import Compose from './Compose'
+import { useEffect, useMemo, useState } from 'react'
+import { GRADES, gradeLabel, type Group, type HanjaLite } from './types'
+import { loadIndex } from './data'
+import GroupCompose from './GroupCompose'
 import HanjaCard from './HanjaCard'
 import Quiz from './Quiz'
 
-const groups = raw as Group[]
-const allChars = groups.flatMap((g) => g.c)
+const INITIALS = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+const TABS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+const SINGLE: Record<string, string> = { ㄲ: 'ㄱ', ㄸ: 'ㄷ', ㅃ: 'ㅂ', ㅆ: 'ㅅ', ㅉ: 'ㅈ' }
 
-function rowsByEum(seedEum: string, list: Hanja[]) {
-  const rows = new Map<string, Hanja[]>([[seedEum, []]])
+// "목" → "ㅁ" (된소리는 예사소리로 묶음)
+function initialOf(s: string) {
+  const code = s.charCodeAt(0) - 0xac00
+  if (code < 0 || code > 11171) return ''
+  const ini = INITIALS[Math.floor(code / 588)]
+  return SINGLE[ini] ?? ini
+}
+
+function rowsByEum(seedEum: string, list: HanjaLite[]) {
+  const rows = new Map<string, HanjaLite[]>([[seedEum, []]])
   for (const h of list) rows.set(h.e, [...(rows.get(h.e) ?? []), h])
   return [...rows.values()].filter((r) => r.length > 0)
 }
 
 export default function App() {
+  const [groups, setGroups] = useState<Group[] | null>(null)
+  const [loadError, setLoadError] = useState(false)
   const [grade, setGrade] = useState<string | null>(null)
   const [groupId, setGroupId] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Hanja | null>(null)
+  const [selected, setSelected] = useState<HanjaLite | null>(null)
   const [quiz, setQuiz] = useState(false)
+  const [initial, setInitial] = useState<string | null>(null)
+  const [pickingInitial, setPickingInitial] = useState(false)
+  const [showSound, setShowSound] = useState(false)
 
-  const group = groups.find((g) => g.g === groupId) ?? null
-  const byGrade = (h: Hanja) => !grade || h.gr === grade
+  useEffect(() => {
+    loadIndex()
+      .then(setGroups)
+      .catch(() => setLoadError(true))
+  }, [])
+
+  useEffect(() => setShowSound(false), [selected])
+
+  const byGrade = (h: HanjaLite) => !grade || h.gr === grade
+  const group = groups?.find((g) => g.g === groupId) ?? null
 
   const visible = useMemo(
-    () => (group ? group.c : groups.flatMap((g) => g.c)).filter(byGrade),
+    () => (group ? group.c : (groups ?? []).flatMap((g) => g.c)).filter(byGrade),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [group, grade],
+    [groups, group, grade],
   )
+
+  // 초성을 고르면 그 초성으로 시작하는 씨앗만 음 가나다순, 아니면 번호순
+  const seeds = useMemo(() => {
+    if (!groups) return []
+    if (!initial) return groups
+    return groups
+      .filter((g) => initialOf(g.c[0].e) === initial)
+      .sort((a, b) => a.c[0].e.localeCompare(b.c[0].e, 'ko') || a.g.localeCompare(b.g))
+  }, [groups, initial])
+
+  const initialCounts = useMemo(() => {
+    const n: Record<string, number> = {}
+    for (const g of groups ?? []) {
+      const k = initialOf(g.c[0].e)
+      n[k] = (n[k] ?? 0) + 1
+    }
+    return n
+  }, [groups])
+
+  if (loadError) return <p className="empty">한자 목록을 불러오지 못했어요. 새로고침해 주세요.</p>
+  if (!groups) return <p className="empty">한자 목록을 불러오는 중…</p>
 
   const pickSeed = (g: Group) => {
     setGroupId(g.g === groupId ? null : g.g)
@@ -38,6 +81,10 @@ export default function App() {
     setGrade(g)
     setSelected(null)
     setQuiz(false)
+  }
+  const pickInitial = (i: string | null) => {
+    setInitial(i)
+    setPickingInitial(false)
   }
 
   return (
@@ -52,32 +99,54 @@ export default function App() {
       </header>
 
       <aside className="seeds" aria-label="씨앗글자">
-        <div className="col-title">씨앗</div>
-        <div className="seed-list">
-          {groups.map((g) => {
-            const has = g.c.some(byGrade)
-            return (
+        <button
+          className={`initial-btn ${initial ? 'on' : ''}`}
+          onClick={() => setPickingInitial((v) => !v)}
+          aria-label="초성으로 찾기"
+        >
+          {initial ?? '가나다'} ▾
+        </button>
+        {pickingInitial ? (
+          <div className="initial-grid">
+            <button className={!initial ? 'on' : ''} onClick={() => pickInitial(null)}>번호순</button>
+            {TABS.map((t) => (
               <button
-                key={g.g}
-                className={`seed ${g.g === groupId ? 'on' : ''} ${has ? '' : 'dim'}`}
-                onClick={() => pickSeed(g)}
+                key={t}
+                className={initial === t ? 'on' : ''}
+                disabled={!initialCounts[t]}
+                onClick={() => pickInitial(t)}
               >
-                <span className="no">{g.g}</span>
-                <span className="hz">{g.c[0].h}</span>
+                {t}
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="seed-list">
+            {seeds.map((g) => {
+              const has = g.c.some(byGrade)
+              return (
+                <button
+                  key={g.g}
+                  className={`seed ${g.g === groupId ? 'on' : ''} ${has ? '' : 'dim'}`}
+                  onClick={() => pickSeed(g)}
+                >
+                  <span className="no">{initial ? g.c[0].e : g.g}</span>
+                  <span className="hz">{g.c[0].h}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </aside>
 
       <main className="board">
         {quiz ? (
-          <Quiz all={allChars} onExit={() => setQuiz(false)} />
+          <Quiz groups={groups} onExit={() => setQuiz(false)} />
         ) : selected ? (
-          <Compose
+          <GroupCompose
             key={selected.h}
-            target={selected}
-            pool={group ? group.c : visible}
+            group={groups.find((g) => g.g === selected.g)!}
+            h={selected.h}
             onBack={() => setSelected(null)}
             onQuiz={() => setQuiz(true)}
           />
@@ -126,10 +195,18 @@ export default function App() {
         ) : selected ? (
           <>
             <span className="hz">{selected.h}</span>
-            <span className="hun">{selected.hun.join(', ')}</span>
+            {showSound ? (
+              <button className="hun" onClick={() => setShowSound(false)}>
+                {selected.hun.join(', ')}
+              </button>
+            ) : (
+              <button className="sound-btn" onClick={() => setShowSound(true)}>
+                👁 뜻·음 보기
+              </button>
+            )}
           </>
         ) : (
-          <span className="hint">글자를 누르면 뜻과 음이 여기에 나와요</span>
+          <span className="hint">글자를 누르면 뜻과 음을 볼 수 있어요</span>
         )}
       </footer>
     </div>

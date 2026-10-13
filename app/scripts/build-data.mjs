@@ -1,11 +1,14 @@
-// data/raw/*.json (페이지별 추출본) → src/data/hanja.json 으로 합치기
+// data/raw/*.json (페이지별 추출본) → public/data/ 로 나누어 내보내기
+//   index.json : 목록·급수·퀴즈에 필요한 가벼운 정보 (앱 시작 때 한 번)
+//   d/NN.json  : 조합 화면에 필요한 상세 정보 (그룹 50개 단위, 필요할 때만)
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const rawDir = join(root, '..', 'data', 'raw')
-const outDir = join(root, 'src', 'data')
+const outDir = join(root, 'public', 'data')
+const CHUNK = 50
 
 const groups = []
 for (const f of readdirSync(rawDir).filter((f) => f.endsWith('.json')).sort()) {
@@ -29,6 +32,17 @@ for (const g of groups) {
   }
 }
 
-mkdirSync(outDir, { recursive: true })
-writeFileSync(join(outDir, 'hanja.json'), JSON.stringify(groups))
+mkdirSync(join(outDir, 'd'), { recursive: true })
+const index = groups.map((g) => ({
+  g: g.g,
+  c: g.c.map(({ h, e, e2, hun, gr, base }) => ({ h, e, ...(e2 ? { e2 } : {}), hun, gr, ...(base ? { base } : {}) })),
+}))
+writeFileSync(join(outDir, 'index.json'), JSON.stringify(index))
+const chunks = {}
+for (const g of groups) {
+  const k = Math.floor((Number(g.g) - 1) / CHUNK)
+  chunks[k] ??= {}
+  for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}) }
+}
+for (const [k, v] of Object.entries(chunks)) writeFileSync(join(outDir, 'd', `${k}.json`), JSON.stringify(v))
 console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}`)

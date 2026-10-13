@@ -89,6 +89,36 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .seed.on .hz { color: var(--accent); }
 .seed.dim { opacity: 0.3; }
 
+/* 초성으로 씨앗 찾기 */
+.initial-btn {
+  margin: 6px 6px 2px;
+  padding: 5px 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.initial-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.initial-grid {
+  overflow-y: auto;
+  padding: 4px 6px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.initial-grid button {
+  padding: 6px 0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--bg);
+}
+.initial-grid button:first-child { grid-column: 1 / -1; font-size: 11px; }
+.initial-grid button.on { background: var(--accent); color: #fff; }
+.initial-grid button:disabled { opacity: 0.25; cursor: default; }
+
 /* 보탬글자 */
 .adds { grid-area: adds; display: flex; flex-direction: column; overflow-y: auto; }
 .tiles { display: flex; flex-direction: column; gap: 8px; padding: 4px 8px 10px; align-items: center; }
@@ -340,6 +370,15 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .sound .hz { font-size: 30px; color: var(--accent); }
 .sound .hun { font-size: 20px; font-weight: 700; }
 .sound .hint { color: var(--muted); font-size: 14px; }
+.sound-btn {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 14px;
+  color: var(--muted);
+}
+.sound .hun { animation: pop 0.25s; }
 
 @keyframes pop {
   0% { transform: scale(0.4); opacity: 0; }
@@ -354,6 +393,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 @media (max-width: 480px) {
   .app { grid-template-columns: 60px 1fr 64px; gap: 6px; padding-left: 6px; padding-right: 6px; }
   .seed .hz { font-size: 24px; }
+  .initial-grid { grid-template-columns: 1fr; }
   .tile { width: 48px; height: 48px; font-size: 24px; }
   .cross { --slot: 46px; --slot-thin: 42px; gap: 6px; }
   .sound .hun { font-size: 17px; }
