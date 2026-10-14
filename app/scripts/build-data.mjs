@@ -27,6 +27,7 @@ for (const g of groups) {
     if (!c.e || !c.hun?.length || !c.gr || !c.st || !c.rad) bad('필수 항목 누락')
     if ((c.pos ?? []).length !== c.add.length) bad('add와 pos 개수가 다름')
     if (new Set(c.pos).size !== c.pos.length) bad('같은 위치에 보탬글자가 둘')
+    if (new Set(c.add).size !== c.add.length) bad('같은 보탬글자가 둘 (괄호로 묶을 것)')
     if (c.pos.some((p) => !'tblrw'.includes(p))) bad('알 수 없는 위치')
     if (!c.base && c.add.length) bad('기준글자 없이 보탬글자만 있음')
   }
