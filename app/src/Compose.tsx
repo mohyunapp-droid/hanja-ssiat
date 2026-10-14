@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import WritePad from './WritePad'
 import { gradeLabel, type Hanja, type Pos, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
@@ -167,6 +168,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
       {done && !onSolved && (
         <div className="detail">
           {isSeed && <span className="hz huge">{target.h}</span>}
+          <WritePad ch={target.h} />
           <div className="meta">
             <span>{gradeLabel(target.gr)}</span>
             <span>총 {target.st}획</span>
