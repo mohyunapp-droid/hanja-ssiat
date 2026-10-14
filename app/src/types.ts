@@ -25,6 +25,8 @@ export interface Hanja extends Omit<HanjaLite, 'base'> {
   pos: Pos[] // 보탬글자 위치 (add와 같은 순서)
   w: Word[] // 예시 단어
   id?: Idiom[] // 이 글자가 들어간 사자성어
+  sy?: [word: string, reading: string][] // 이 글자가 들어간 유의어(결합어)
+  pr?: [a: string, ra: string, b: string, rb: string][] // 뜻이 비슷한 두 단어 짝
   note?: string
 }
 

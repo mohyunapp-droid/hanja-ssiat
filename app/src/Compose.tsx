@@ -22,14 +22,14 @@ function makeTiles(target: Hanja, pool: Hanja[]) {
 
 const isText = (s: string) => s.startsWith('(')
 
-// 이 글자가 들어간 사자성어. 많으면 3개만 보이고 더보기
-function IdiomList({ list }: { list: Idiom[] }) {
+// 사자성어·유의어 등 이 글자가 들어간 단어 목록. 많으면 3개만 보이고 더보기
+function IdiomList({ title, list }: { title: string; list: (Word | Idiom)[] }) {
   const [all, setAll] = useState(false)
   const shown = all ? list : list.slice(0, 3)
   return (
     <div className="idioms">
       <h3 className="idioms-title">
-        사자성어 <span>{list.length}</span>
+        {title} <span>{list.length}</span>
       </h3>
       <ul className="words">
         {shown.map(([w, r, m, gr]) => (
@@ -61,7 +61,7 @@ function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
     <li className="word-board" role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
       <span className="hz">{w}</span>
       <span className={`rd ${shown ? '' : 'hidden'} ${spinning ? 'spin' : ''}`}>{shown ? r : '?'}</span>
-      <span className="mn">{m}</span>
+      {m && <span className="mn">{m}</span>}
       {grade && <span className="idiom-gr">{gradeLabel(grade)}</span>}
     </li>
   )
@@ -205,7 +205,16 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
               ))}
             </ul>
           )}
-          {target.id && target.id.length > 0 && <IdiomList list={target.id} />}
+          {target.id && target.id.length > 0 && <IdiomList title="사자성어" list={target.id} />}
+          {target.sy && target.sy.length > 0 && (
+            <IdiomList title="유의어 (비슷한 뜻의 글자로 된 단어)" list={target.sy.map(([w, r]) => [w, r, ''] as Word)} />
+          )}
+          {target.pr && target.pr.length > 0 && (
+            <IdiomList
+              title="뜻이 비슷한 단어"
+              list={target.pr.map(([a, ra, b, rb]) => [`${a} ≈ ${b}`, `${ra} ≈ ${rb}`, ''] as Word)}
+            />
+          )}
           {target.note && <p className="note">{target.note}</p>}
         </div>
       )}

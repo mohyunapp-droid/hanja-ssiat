@@ -4,7 +4,7 @@ import type { Group, Hanja, HanjaLite } from './types'
 const BASE = `${import.meta.env.BASE_URL}data/`
 const CHUNK = 50
 
-type Detail = Pick<Hanja, 'st' | 'rad' | 'add' | 'pos' | 'w' | 'note' | 'id'>
+type Detail = Pick<Hanja, 'st' | 'rad' | 'add' | 'pos' | 'w' | 'note' | 'id' | 'sy' | 'pr'>
 
 export async function loadIndex(): Promise<Group[]> {
   const res = await fetch(`${BASE}index.json`)
