@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import WritePad from './WritePad'
-import { gradeLabel, type Hanja, type Pos, type Word } from './types'
+import { gradeLabel, type Hanja, type Idiom, type Pos, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
   const r = [...a]
@@ -22,8 +22,31 @@ function makeTiles(target: Hanja, pool: Hanja[]) {
 
 const isText = (s: string) => s.startsWith('(')
 
+// 이 글자가 들어간 사자성어. 많으면 3개만 보이고 더보기
+function IdiomList({ list }: { list: Idiom[] }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? list : list.slice(0, 3)
+  return (
+    <div className="idioms">
+      <h3 className="idioms-title">
+        사자성어 <span>{list.length}</span>
+      </h3>
+      <ul className="words">
+        {shown.map(([w, r, m, gr]) => (
+          <WordBoard key={w} word={[w, r, m]} grade={gr} />
+        ))}
+      </ul>
+      {list.length > 3 && (
+        <button className="more-btn" onClick={() => setAll((v) => !v)}>
+          {all ? '접기' : `더보기 (${list.length - 3})`}
+        </button>
+      )}
+    </div>
+  )
+}
+
 // 예시 단어: 읽기를 ?로 가려두고, 누르면 보드가 한 바퀴 돌며 읽기가 나타남
-function WordBoard({ word: [w, r, m] }: { word: Word }) {
+function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
   const [shown, setShown] = useState(false)
   const [spinning, setSpinning] = useState(false)
 
@@ -39,6 +62,7 @@ function WordBoard({ word: [w, r, m] }: { word: Word }) {
       <span className="hz">{w}</span>
       <span className={`rd ${shown ? '' : 'hidden'} ${spinning ? 'spin' : ''}`}>{shown ? r : '?'}</span>
       <span className="mn">{m}</span>
+      {grade && <span className="idiom-gr">{gradeLabel(grade)}</span>}
     </li>
   )
 }
@@ -181,6 +205,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
               ))}
             </ul>
           )}
+          {target.id && target.id.length > 0 && <IdiomList list={target.id} />}
           {target.note && <p className="note">{target.note}</p>}
         </div>
       )}

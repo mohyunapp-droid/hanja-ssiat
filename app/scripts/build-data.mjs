@@ -39,11 +39,26 @@ const index = groups.map((g) => ({
   c: g.c.map(({ h, e, e2, hun, gr, base }) => ({ h, e, ...(e2 ? { e2 } : {}), hun, gr, ...(base ? { base } : {}) })),
 }))
 writeFileSync(join(outDir, 'index.json'), JSON.stringify(index))
+// 사자성어: data/idioms/*.txt (사자성어|읽기|급수|뜻) → 구성 글자마다 연결
+const idiomDir = join(root, '..', 'data', 'idioms')
+const idiomsByChar = {}
+let idiomCount = 0
+for (const f of readdirSync(idiomDir).filter((f) => f.endsWith('.txt')).sort()) {
+  for (const raw of readFileSync(join(idiomDir, f), 'utf8').split('\n')) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const [w, r, gr, m] = line.split('|')
+    if (!w || !r || !gr || !m) throw new Error(`사자성어 형식 오류: ${f} ${line}`)
+    idiomCount++
+    for (const ch of new Set(w)) (idiomsByChar[ch] ??= []).push([w, r, m, gr])
+  }
+}
+
 const chunks = {}
 for (const g of groups) {
   const k = Math.floor((Number(g.g) - 1) / CHUNK)
   chunks[k] ??= {}
-  for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}) }
+  for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}), ...(idiomsByChar[h] ? { id: idiomsByChar[h] } : {}) }
 }
 for (const [k, v] of Object.entries(chunks)) writeFileSync(join(outDir, 'd', `${k}.json`), JSON.stringify(v))
-console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}`)
+console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}`)

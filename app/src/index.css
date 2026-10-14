@@ -507,3 +507,10 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
   color: var(--muted);
 }
 .writepad-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+/* 사자성어 */
+.idioms { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.idioms-title { margin: 6px 0 0; font-size: 14px; font-weight: 700; color: var(--muted); }
+.idioms-title span { font-size: 12px; color: var(--accent); margin-left: 4px; }
+.idiom-gr { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+.more-btn { align-self: center; padding: 6px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: 13px; color: var(--muted); }

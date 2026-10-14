@@ -1,6 +1,8 @@
 // 위, 아래, 왼쪽, 오른쪽, 감싸기(囗·辶·广·門처럼 기준글자를 둘러쌈)
 export type Pos = 't' | 'b' | 'l' | 'r' | 'w'
 
+export type Idiom = [word: string, reading: string, meaning: string, grade: string]
+
 export type Word =[word: string, reading: string, meaning: string]
 
 // 목록·급수·퀴즈에 쓰는 가벼운 정보 (index.json)
@@ -22,6 +24,7 @@ export interface Hanja extends Omit<HanjaLite, 'base'> {
   add: string[] // 보탬글자
   pos: Pos[] // 보탬글자 위치 (add와 같은 순서)
   w: Word[] // 예시 단어
+  id?: Idiom[] // 이 글자가 들어간 사자성어
   note?: string
 }
 
