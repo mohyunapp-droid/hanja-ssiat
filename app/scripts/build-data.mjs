@@ -36,7 +36,7 @@ for (const g of groups) {
 mkdirSync(join(outDir, 'd'), { recursive: true })
 const index = groups.map((g) => ({
   g: g.g,
-  c: g.c.map(({ h, e, e2, hun, gr, base }) => ({ h, e, ...(e2 ? { e2 } : {}), hun, gr, ...(base ? { base } : {}) })),
+  c: g.c.map(({ h, e, e2, hun, gr, base, add }) => ({ h, e, ...(e2 ? { e2 } : {}), hun, gr, ...(base ? { base } : {}), ...(add.length ? { a: add } : {}) })),
 }))
 writeFileSync(join(outDir, 'index.json'), JSON.stringify(index))
 // 사자성어: data/idioms/*.txt (사자성어|읽기|급수|뜻) → 구성 글자마다 연결

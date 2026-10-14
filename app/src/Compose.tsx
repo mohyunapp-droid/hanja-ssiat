@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import WritePad from './WritePad'
+import { loadCharMap, type CharInfo } from './data'
 import { gradeLabel, type Hanja, type Idiom, type Pair, type Pos, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
@@ -45,6 +46,47 @@ function IdiomList({ title, list }: { title: string; list: (Word | Idiom)[] }) {
   )
 }
 
+// 단어 속 다른 글자의 짜임(씨앗글자·보탬글자) 풀이에 필요한 정보
+const WordCtx = createContext<{ target: string; chars: Map<string, CharInfo>; parts: Record<string, [string, string]> } | null>(null)
+const isHanChar = (ch: string) => /\p{Script=Han}/u.test(ch)
+const short = (hun: string[]) => hun[0] ?? ''
+
+// 보탬글자 이름: 앱 한자면 훈음, 아니면 parts.json 의 이름. (人人戈)는 한 글자씩
+function partName(tile: string, ctx: NonNullable<React.ContextType<typeof WordCtx>>) {
+  return [...new Set(tile.replace(/[()]/g, ''))]
+    .filter(isHanChar)
+    .map((ch) => `${ch} ${ctx.parts[ch]?.[0] ?? short(ctx.chars.get(ch)?.hun ?? [])}`.trim())
+    .join(' + ')
+}
+
+function WordParts({ word }: { word: string }) {
+  const ctx = useContext(WordCtx)
+  if (!ctx) return null
+  const others = [...new Set(word)].filter((ch) => isHanChar(ch) && ch !== ctx.target && ctx.chars.has(ch))
+  if (!others.length) return null
+  return (
+    <ul className="wb-parts">
+      {others.map((ch) => {
+        const c = ctx.chars.get(ch)!
+        const seed = c.seed.h === ch ? null : c.seed
+        return (
+          <li key={ch}>
+            <span className="hz">{ch}</span> <b>{short(c.hun)}</b>
+            {seed ? (
+              <span className="wb-line">
+                씨앗 <span className="hz">{seed.h}</span> {short(seed.hun)}
+                {c.a?.length ? <> · 보탬 {c.a.map((t) => partName(t, ctx)).join(', ')}</> : null}
+              </span>
+            ) : (
+              <span className="wb-line">씨앗글자</span>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 // 예시 단어: 읽기를 ?로 가려두고, 누르면 보드가 한 바퀴 돌며 읽기가 나타남
 function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
   const [shown, setShown] = useState(false)
@@ -61,7 +103,12 @@ function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
     <li className="word-board" role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
       <span className="hz">{w}</span>
       <span className={`rd ${shown ? '' : 'hidden'} ${spinning ? 'spin' : ''}`}>{shown ? r : '?'}</span>
-      {m && <span className="mn">{m}</span>}
+      {(m || shown) && (
+        <div className="wb-side">
+          {m && <span className="mn">{m}</span>}
+          {shown && <WordParts word={w} />}
+        </div>
+      )}
       {grade && <span className="idiom-gr">{gradeLabel(grade)}</span>}
     </li>
   )
@@ -146,6 +193,14 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
   const [drag, setDrag] = useState<{ t: string; x: number; y: number } | null>(null)
   const [panel, setPanel] = useState<HTMLElement | null>(null)
   const [info, setInfo] = useState<string | null>(null) // 길게 눌러 설명을 보는 보탬글자
+  const [chars, setChars] = useState<Map<string, CharInfo> | null>(null)
+  const [partsMap, setPartsMap] = useState<Record<string, [string, string]>>({})
+  useEffect(() => {
+    if (onSolved) return // 문제풀기에서는 상세 정보를 보여주지 않음
+    loadCharMap().then(setChars, () => {})
+    loadParts().then(setPartsMap, () => {})
+  }, [onSolved])
+  const wordCtx = useMemo(() => (chars ? { target: target.h, chars, parts: partsMap } : null), [chars, partsMap, target.h])
 
   useEffect(() => setPanel(document.getElementById('add-panel')), [])
 
@@ -258,6 +313,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
       )}
 
       {done && !onSolved && (
+        <WordCtx.Provider value={wordCtx}>
         <div className="detail">
           {isSeed && <span className="hz huge">{target.h}</span>}
           <WritePad ch={target.h} />
@@ -293,6 +349,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
           })}
           {target.note && <p className="note">{target.note}</p>}
         </div>
+        </WordCtx.Provider>
       )}
 
       {panel &&

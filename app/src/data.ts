@@ -6,10 +6,27 @@ const CHUNK = 50
 
 type Detail = Pick<Hanja, 'st' | 'rad' | 'add' | 'pos' | 'w' | 'note' | 'id' | 'sy' | 'an' | 'pr' | 'op' | 'ho' | 'ab' | 'ex'>
 
-export async function loadIndex(): Promise<Group[]> {
-  const res = await fetch(`${BASE}index.json`)
-  const raw = (await res.json()) as { g: string; c: Omit<HanjaLite, 'g'>[] }[]
-  return raw.map((grp) => ({ g: grp.g, c: grp.c.map((c) => ({ ...c, g: grp.g })) }))
+let indexCache: Promise<Group[]> | null = null
+
+export function loadIndex(): Promise<Group[]> {
+  indexCache ??= fetch(`${BASE}index.json`)
+    .then((res) => res.json() as Promise<{ g: string; c: Omit<HanjaLite, 'g'>[] }[]>)
+    .then((raw) => raw.map((grp) => ({ g: grp.g, c: grp.c.map((c) => ({ ...c, g: grp.g })) })))
+  indexCache.catch(() => (indexCache = null))
+  return indexCache
+}
+
+// 한자 → { 글자 정보, 그 그룹의 씨앗글자 } (단어 속 다른 글자의 짜임 풀이용)
+export type CharInfo = HanjaLite & { seed: HanjaLite }
+let charMapCache: Promise<Map<string, CharInfo>> | null = null
+export function loadCharMap() {
+  charMapCache ??= loadIndex().then((groups) => {
+    const m = new Map<string, CharInfo>()
+    for (const g of groups) for (const c of g.c) if (!m.has(c.h)) m.set(c.h, { ...c, seed: g.c[0] })
+    return m
+  })
+  charMapCache.catch(() => (charMapCache = null))
+  return charMapCache
 }
 
 const chunks = new Map<number, Promise<Record<string, Detail>>>()

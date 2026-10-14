@@ -15,6 +15,7 @@ export interface HanjaLite {
   hun: string[] // 훈음 (예: "편안할 안")
   gr: string // 급수: "8" … "4II" … "1"
   base?: string // 기준글자 (씨앗이면 없음)
+  a?: string[] // 보탬글자 (단어 풀이에서 다른 글자의 짜임을 보여줄 때 씀)
   g: string // 속한 그룹 번호 (불러올 때 채움)
 }
 
