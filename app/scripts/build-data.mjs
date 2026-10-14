@@ -116,6 +116,33 @@ for (const [f, line] of lines(join(root, '..', 'data', 'extra'))) {
   }
 }
 
+// 기출문제: data/exam/rN.txt (번호|유형|문제|정답|오답 후보) → public/data/exam.json
+//   qs: [회, 번호, 유형, 문제, 정답, 오답후보[], 다른 정답[]], by: { 한자: [문제 번호…] }
+//   오답 후보가 없으면 같은 유형의 다른 정답(같은 회 먼저)에서 고름
+const EXAM_TYPES = ['읽기', '뜻', '전의', '유의어', '반의어', '반의결합', '유의결합', '훈음', '부수', '쓰기', '장음', '훈음단어', '동음', '약자', '유의자', '반의자', '성어', '구조', '뜻한자어', '뜻글자']
+const ANSWER_ONLY = ['쓰기', '동음', '뜻한자어', '뜻글자', '장음', '반의결합', '유의결합', '구조']
+const isHan = (ch) => /\p{Script=Han}/u.test(ch)
+const examRaw = []
+for (const [f, line] of lines(join(root, '..', 'data', 'exam'))) {
+  const [n, t, q, a, x] = line.split('|')
+  if (!n || !EXAM_TYPES.includes(t) || q === undefined || !a) throw new Error(`기출 형식 오류: ${f} ${line}`)
+  examRaw.push({ r: Number(f.match(/r(\d+)/)[1]), n, t, q, a, x: x ? x.split(',').filter((v) => v && v !== a) : [] })
+}
+const shuffled = (arr) => arr.map((v) => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map(([, v]) => v)
+const allChars = new Set(groups.flatMap((g) => g.c.map((c) => c.h)))
+const exam = { qs: [], by: {} }
+for (const e of examRaw) {
+  const same = (pred) => [...new Set(examRaw.filter((o) => o.t === e.t && pred(o)).map((o) => o.a))].filter((v) => v !== e.a)
+  const others = e.x.length >= 3 ? [] : shuffled([...same((o) => o.r === e.r), ...shuffled(same((o) => o.r !== e.r))].slice(0, 12)).slice(0, 6)
+  const i = exam.qs.push([e.r, e.n, e.t, e.q, e.a, shuffled(e.x).slice(0, 6), others]) - 1
+  // 괄호를 정답 글자로 채운 문제 + 정답에서 한자를 모아 해당 글자에 연결
+  let k = 0
+  const filled = e.q.replace(/\(\s*\)/g, () => e.a[k++] ?? '')
+  const text = ANSWER_ONLY.includes(e.t) ? e.a : filled + e.a
+  for (const ch of new Set([...text].filter(isHan))) if (allChars.has(ch)) (exam.by[ch] ??= []).push(i)
+}
+writeFileSync(join(outDir, 'exam.json'), JSON.stringify(exam))
+
 const chunks = {}
 for (const g of groups) {
   const k = Math.floor((Number(g.g) - 1) / CHUNK)
@@ -123,4 +150,4 @@ for (const g of groups) {
   for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}), ...(idiomsByChar[h] ? { id: idiomsByChar[h] } : {}), ...(synByChar[h] ? { sy: synByChar[h] } : {}), ...(antByChar[h] ? { an: antByChar[h] } : {}), ...Object.fromEntries(Object.entries(pairByChar).filter(([, m]) => m[h]).map(([k, m]) => [k, m[h]])), ...(abbr[h] ? { ab: abbr[h] } : {}), ...(extra[h] ? { ex: extra[h] } : {}) }
 }
 for (const [k, v] of Object.entries(chunks)) writeFileSync(join(outDir, 'd', `${k}.json`), JSON.stringify(v))
-console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synCount}, antonyms: ${antCount}, pairs: ${pairSeen.size}, abbr: ${Object.keys(abbr).length}, extra: ${extraCount}`)
+console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synCount}, antonyms: ${antCount}, pairs: ${pairSeen.size}, abbr: ${Object.keys(abbr).length}, extra: ${extraCount}, exam: ${exam.qs.length} (연결된 글자 ${Object.keys(exam.by).length})`)
