@@ -160,6 +160,15 @@ for (const g of groups)
       }
 writeFileSync(join(outDir, 'parts.json'), JSON.stringify(parts))
 
+// 1급 책에 없는 글자의 훈음: data/hun/*.txt (글자|훈음) → public/data/hun.json (앱 한자에 있는 글자는 그쪽이 우선)
+const extraHun = {}
+for (const [f, line] of lines(join(root, '..', 'data', 'hun'))) {
+  const [h, hun] = line.split('|')
+  if (!h || !hun) throw new Error(`훈음 형식 오류: ${f} ${line}`)
+  if (!allChars.has(h)) extraHun[h] = hun
+}
+writeFileSync(join(outDir, 'hun.json'), JSON.stringify(extraHun))
+
 const chunks = {}
 for (const g of groups) {
   const k = Math.floor((Number(g.g) - 1) / CHUNK)
@@ -167,4 +176,4 @@ for (const g of groups) {
   for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}), ...(idiomsByChar[h] ? { id: idiomsByChar[h] } : {}), ...(synByChar[h] ? { sy: synByChar[h] } : {}), ...(antByChar[h] ? { an: antByChar[h] } : {}), ...Object.fromEntries(Object.entries(pairByChar).filter(([, m]) => m[h]).map(([k, m]) => [k, m[h]])), ...(abbr[h] ? { ab: abbr[h] } : {}), ...(extra[h] ? { ex: extra[h] } : {}) }
 }
 for (const [k, v] of Object.entries(chunks)) writeFileSync(join(outDir, 'd', `${k}.json`), JSON.stringify(v))
-console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synCount}, antonyms: ${antCount}, pairs: ${pairSeen.size}, abbr: ${Object.keys(abbr).length}, extra: ${extraCount}, exam: ${exam.qs.length} (연결된 글자 ${Object.keys(exam.by).length})`)
+console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synCount}, antonyms: ${antCount}, pairs: ${pairSeen.size}, abbr: ${Object.keys(abbr).length}, extra: ${extraCount}, exam: ${exam.qs.length} (연결된 글자 ${Object.keys(exam.by).length}), 추가 훈음: ${Object.keys(extraHun).length}`)

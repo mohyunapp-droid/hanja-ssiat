@@ -47,7 +47,12 @@ function IdiomList({ title, list }: { title: string; list: (Word | Idiom)[] }) {
 }
 
 // 단어 속 다른 글자의 짜임(씨앗글자·보탬글자) 풀이에 필요한 정보
-const WordCtx = createContext<{ target: string; chars: Map<string, CharInfo>; parts: Record<string, [string, string]> } | null>(null)
+const WordCtx = createContext<{
+  target: string
+  chars: Map<string, CharInfo>
+  parts: Record<string, [string, string]>
+  hun: Record<string, string> // 1급 책에 없는 글자의 훈음
+} | null>(null)
 const isHanChar = (ch: string) => /\p{Script=Han}/u.test(ch)
 const short = (hun: string[]) => hun[0] ?? ''
 
@@ -55,19 +60,25 @@ const short = (hun: string[]) => hun[0] ?? ''
 function partName(tile: string, ctx: NonNullable<React.ContextType<typeof WordCtx>>) {
   return [...new Set(tile.replace(/[()]/g, ''))]
     .filter(isHanChar)
-    .map((ch) => `${ch} ${ctx.parts[ch]?.[0] ?? short(ctx.chars.get(ch)?.hun ?? [])}`.trim())
+    .map((ch) => `${ch} ${ctx.parts[ch]?.[0] ?? (short(ctx.chars.get(ch)?.hun ?? []) || ctx.hun[ch] || '')}`.trim())
     .join(' + ')
 }
 
 function WordParts({ word }: { word: string }) {
   const ctx = useContext(WordCtx)
   if (!ctx) return null
-  const others = [...new Set(word)].filter((ch) => isHanChar(ch) && ch !== ctx.target && ctx.chars.has(ch))
+  const others = [...new Set(word)].filter((ch) => isHanChar(ch) && ch !== ctx.target && (ctx.chars.has(ch) || ctx.hun[ch]))
   if (!others.length) return null
   return (
     <ul className="wb-parts">
       {others.map((ch) => {
-        const c = ctx.chars.get(ch)!
+        const c = ctx.chars.get(ch)
+        if (!c)
+          return (
+            <li key={ch}>
+              <span className="hz">{ch}</span> <b>{ctx.hun[ch]}</b>
+            </li>
+          )
         const seed = c.seed.h === ch ? null : c.seed
         return (
           <li key={ch}>
@@ -137,6 +148,13 @@ const loadParts = () => {
   return partsCache
 }
 
+let hunCache: Promise<Record<string, string>> | null = null
+const loadExtraHun = () => {
+  hunCache ??= fetch(`${import.meta.env.BASE_URL}data/hun.json`).then((r) => r.json())
+  hunCache.catch(() => (hunCache = null))
+  return hunCache
+}
+
 function PartInfo({ tile, onClose }: { tile: string; onClose: () => void }) {
   const [parts, setParts] = useState<Record<string, [string, string]> | null>(null)
   useEffect(() => {
@@ -195,12 +213,17 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
   const [info, setInfo] = useState<string | null>(null) // 길게 눌러 설명을 보는 보탬글자
   const [chars, setChars] = useState<Map<string, CharInfo> | null>(null)
   const [partsMap, setPartsMap] = useState<Record<string, [string, string]>>({})
+  const [extraHun, setExtraHun] = useState<Record<string, string>>({})
   useEffect(() => {
     if (onSolved) return // 문제풀기에서는 상세 정보를 보여주지 않음
     loadCharMap().then(setChars, () => {})
     loadParts().then(setPartsMap, () => {})
+    loadExtraHun().then(setExtraHun, () => {})
   }, [onSolved])
-  const wordCtx = useMemo(() => (chars ? { target: target.h, chars, parts: partsMap } : null), [chars, partsMap, target.h])
+  const wordCtx = useMemo(
+    () => (chars ? { target: target.h, chars, parts: partsMap, hun: extraHun } : null),
+    [chars, partsMap, extraHun, target.h],
+  )
 
   useEffect(() => setPanel(document.getElementById('add-panel')), [])
 
