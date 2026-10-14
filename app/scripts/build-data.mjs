@@ -61,34 +61,66 @@ const lines = (dir) =>
     .flatMap((f) => readFileSync(join(dir, f), 'utf8').split('\n').map((l) => [f, l.trim()]))
     .filter(([, l]) => l && !l.startsWith('#'))
 
-// 유의어(결합어): data/synonyms/*.txt (단어 읽기) → 구성 글자마다 연결
-const synByChar = {}
-const synSeen = new Set()
-for (const [f, line] of lines(join(root, '..', 'data', 'synonyms'))) {
-  const [w, r] = line.split(/\s+/)
-  if (!w || !r || w.length !== r.length) throw new Error(`유의어 형식 오류: ${f} ${line}`)
-  if (synSeen.has(w)) continue
-  synSeen.add(w)
-  for (const ch of new Set(w)) (synByChar[ch] ??= []).push([w, r])
+// 유의어·상대어(결합어): data/synonyms, data/antonyms (단어 읽기) → 구성 글자마다 연결
+const wordsByChar = (dir, label) => {
+  const byChar = {}
+  const seen = new Set()
+  for (const [f, line] of lines(join(root, '..', 'data', dir))) {
+    const [w, r] = line.split(/\s+/)
+    if (!w || !r || w.length !== r.length) throw new Error(`${label} 형식 오류: ${f} ${line}`)
+    if (seen.has(w)) continue
+    seen.add(w)
+    for (const ch of new Set(w)) (byChar[ch] ??= []).push([w, r])
+  }
+  return [byChar, seen.size]
 }
+const [synByChar, synCount] = wordsByChar('synonyms', '유의어')
+const [antByChar, antCount] = wordsByChar('antonyms', '상대어')
 
-// 비슷한 말 짝: data/pairs/*.txt (종류|단어|읽기|짝|읽기) → 두 단어의 글자마다 연결 (순서 무관 중복 제거)
-const pairByChar = {}
+// 단어 짝: data/pairs/*.txt (종류|단어|읽기|짝|읽기) → 두 단어의 글자마다 연결 (순서 무관 중복 제거)
+//   유의 → pr, 상대 → op, 동음 → ho
+const PAIR_KEY = { 유의: 'pr', 상대: 'op', 동음: 'ho' }
+const pairByChar = { pr: {}, op: {}, ho: {} }
 const pairSeen = new Set()
 for (const [f, line] of lines(join(root, '..', 'data', 'pairs'))) {
-  const [, a, ra, b, rb] = line.split('|')
-  if (!a || !ra || !b || !rb) throw new Error(`짝 형식 오류: ${f} ${line}`)
-  const key = [a, b].sort().join('|')
-  if (pairSeen.has(key)) continue
-  pairSeen.add(key)
-  for (const ch of new Set(a + b)) (pairByChar[ch] ??= []).push([a, ra, b, rb])
+  const [kind, a, ra, b, rb] = line.split('|')
+  const key = PAIR_KEY[kind]
+  if (!key || !a || !ra || !b || !rb) throw new Error(`짝 형식 오류: ${f} ${line}`)
+  const id = kind + [a, b].sort().join('|')
+  if (pairSeen.has(id)) continue
+  pairSeen.add(id)
+  for (const ch of new Set(a + b)) (pairByChar[key][ch] ??= []).push([a, ra, b, rb])
+}
+
+// 약자: data/abbr/*.txt (기본체 약자[,약자…])
+const abbr = {}
+for (const [f, line] of lines(join(root, '..', 'data', 'abbr'))) {
+  const [h, ab] = line.split(/\s+/)
+  if (!h || !ab) throw new Error(`약자 형식 오류: ${f} ${line}`)
+  abbr[h] = [...new Set([...(abbr[h] ?? []), ...ab.split(',')])]
+}
+
+// 속음·장단음·다음: data/extra/*.txt
+//   한자|종류|단어|읽기  또는  한자|종류|단어:읽기 단어:읽기 …
+const EXTRA_KINDS = ['속음', '단음', '장음', '다음']
+const extra = {}
+let extraCount = 0
+for (const [f, line] of lines(join(root, '..', 'data', 'extra'))) {
+  const [h, kind, ...rest] = line.split('|')
+  if (!h || !EXTRA_KINDS.includes(kind) || !rest.length) throw new Error(`extra 형식 오류: ${f} ${line}`)
+  const words = rest.length === 2 ? [rest] : rest[0].split(/\s+/).map((x) => x.split(':'))
+  for (const [w, r] of words) {
+    if (!w || !r) throw new Error(`extra 형식 오류: ${f} ${line}`)
+    ;(extra[h] ??= []).push([kind, w, r])
+    extraCount++
+  }
 }
 
 const chunks = {}
 for (const g of groups) {
   const k = Math.floor((Number(g.g) - 1) / CHUNK)
   chunks[k] ??= {}
-  for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}), ...(idiomsByChar[h] ? { id: idiomsByChar[h] } : {}), ...(synByChar[h] ? { sy: synByChar[h] } : {}), ...(pairByChar[h] ? { pr: pairByChar[h] } : {}) }
+  for (const { h, st, rad, add, pos, w, note } of g.c) chunks[k][h] = { st, rad, add, pos, w, ...(note ? { note } : {}), ...(idiomsByChar[h] ? { id: idiomsByChar[h] } : {}), ...(synByChar[h] ? { sy: synByChar[h] } : {}), ...(antByChar[h] ? { an: antByChar[h] } : {}), ...Object.fromEntries(Object.entries(pairByChar).filter(([, m]) => m[h]).map(([k, m]) => [k, m[h]])), ...(abbr[h] ? { ab: abbr[h] } : {}), ...(extra[h] ? { ex: extra[h] } : {}) }
 }
 for (const [k, v] of Object.entries(chunks)) writeFileSync(join(outDir, 'd', `${k}.json`), JSON.stringify(v))
-console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synSeen.size}, pairs: ${pairSeen.size}`)
+console.log(`groups: ${groups.length}, chars: ${groups.reduce((n, g) => n + g.c.length, 0)}, idioms: ${idiomCount}, synonyms: ${synCount}, antonyms: ${antCount}, pairs: ${pairSeen.size}, abbr: ${Object.keys(abbr).length}, extra: ${extraCount}`)

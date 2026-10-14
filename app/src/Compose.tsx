@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import WritePad from './WritePad'
-import { gradeLabel, type Hanja, type Idiom, type Pos, type Word } from './types'
+import { gradeLabel, type Hanja, type Idiom, type Pair, type Pos, type Word } from './types'
 
 const shuffle = <T,>(a: T[]) => {
   const r = [...a]
@@ -66,6 +66,18 @@ function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
     </li>
   )
 }
+
+const pairWords = (list: Pair[], sign: string) => list.map(([a, ra, b, rb]) => [`${a} ${sign} ${b}`, `${ra} ${sign} ${rb}`, ''] as Word)
+const PAIR_LISTS = [
+  ['pr', '뜻이 비슷한 단어', '≈'],
+  ['op', '뜻이 반대인 단어', '↔'],
+  ['ho', '음이 같은 단어', '='],
+] as const
+const EXTRA_LISTS = [
+  [['다음'], '여러 음으로 읽는 단어'],
+  [['속음'], '속음 (본래 음과 다르게 읽는 말)'],
+  [['장음', '단음'], '장단음 (길게·짧게 읽는 말)'],
+] as const
 
 const POS_LABEL: Record<Pos, string> = { t: '위', b: '아래', l: '왼쪽', r: '오른쪽', w: '감싸기' }
 
@@ -197,6 +209,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
             <span>{gradeLabel(target.gr)}</span>
             <span>총 {target.st}획</span>
             <span>부수 <b className="hz">{target.rad}</b></span>
+            {target.ab && <span>약자 <b className="hz">{target.ab.join(' ')}</b></span>}
           </div>
           {target.w.length > 0 && (
             <ul className="words">
@@ -209,12 +222,19 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
           {target.sy && target.sy.length > 0 && (
             <IdiomList title="유의어 (비슷한 뜻의 글자로 된 단어)" list={target.sy.map(([w, r]) => [w, r, ''] as Word)} />
           )}
-          {target.pr && target.pr.length > 0 && (
-            <IdiomList
-              title="뜻이 비슷한 단어"
-              list={target.pr.map(([a, ra, b, rb]) => [`${a} ≈ ${b}`, `${ra} ≈ ${rb}`, ''] as Word)}
-            />
+          {target.an && target.an.length > 0 && (
+            <IdiomList title="상대어 (반대 뜻의 글자로 된 단어)" list={target.an.map(([w, r]) => [w, r, ''] as Word)} />
           )}
+          {PAIR_LISTS.map(([key, title, sign]) => {
+            const list = target[key]
+            return list && list.length > 0 ? <IdiomList key={key} title={title} list={pairWords(list, sign)} /> : null
+          })}
+          {EXTRA_LISTS.map(([kinds, title]) => {
+            const list = (target.ex ?? []).filter(([k]) => (kinds as readonly string[]).includes(k))
+            return list.length > 0 ? (
+              <IdiomList key={title} title={title} list={list.map(([k, w, r]) => [w, r, kinds.length > 1 ? k : ''] as Word)} />
+            ) : null
+          })}
           {target.note && <p className="note">{target.note}</p>}
         </div>
       )}

@@ -3,7 +3,9 @@ export type Pos = 't' | 'b' | 'l' | 'r' | 'w'
 
 export type Idiom = [word: string, reading: string, meaning: string, grade: string]
 
-export type Word =[word: string, reading: string, meaning: string]
+export type Pair = [a: string, ra: string, b: string, rb: string]
+
+export type Word = [word: string, reading: string, meaning: string]
 
 // 목록·급수·퀴즈에 쓰는 가벼운 정보 (index.json)
 export interface HanjaLite {
@@ -26,7 +28,12 @@ export interface Hanja extends Omit<HanjaLite, 'base'> {
   w: Word[] // 예시 단어
   id?: Idiom[] // 이 글자가 들어간 사자성어
   sy?: [word: string, reading: string][] // 이 글자가 들어간 유의어(결합어)
-  pr?: [a: string, ra: string, b: string, rb: string][] // 뜻이 비슷한 두 단어 짝
+  an?: [word: string, reading: string][] // 이 글자가 들어간 상대어(결합어)
+  pr?: Pair[] // 뜻이 비슷한 두 단어 짝
+  op?: Pair[] // 뜻이 반대인 두 단어 짝
+  ho?: Pair[] // 음이 같은 두 단어 짝
+  ab?: string[] // 약자
+  ex?: [kind: '속음' | '단음' | '장음' | '다음', word: string, reading: string][]
   note?: string
 }
 
