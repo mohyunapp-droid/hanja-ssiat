@@ -143,6 +143,23 @@ for (const e of examRaw) {
 }
 writeFileSync(join(outDir, 'exam.json'), JSON.stringify(exam))
 
+// 보탬글자 설명: data/parts/*.txt (글자|이름|설명) + 앱 한자의 훈음 → public/data/parts.json { 글자: [이름, 설명] }
+const parts = {}
+for (const [f, line] of lines(join(root, '..', 'data', 'parts'))) {
+  const [h, name, desc] = line.split('|')
+  if (!h || !name) throw new Error(`보탬글자 설명 형식 오류: ${f} ${line}`)
+  parts[h] = [name, desc ?? '']
+}
+const hunOf = Object.fromEntries(groups.flatMap((g) => g.c.map((c) => [c.h, c.hun[0]])))
+for (const g of groups)
+  for (const c of g.c)
+    for (const ch of c.add.join('').replace(/[()]/g, ''))
+      if (isHan(ch) && !parts[ch]) {
+        if (!hunOf[ch]) throw new Error(`보탬글자 설명 없음: ${ch} (${g.g} ${c.h})`)
+        parts[ch] = [hunOf[ch], '']
+      }
+writeFileSync(join(outDir, 'parts.json'), JSON.stringify(parts))
+
 const chunks = {}
 for (const g of groups) {
   const k = Math.floor((Number(g.g) - 1) / CHUNK)

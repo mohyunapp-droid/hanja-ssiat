@@ -79,7 +79,51 @@ const EXTRA_LISTS = [
   [['장음', '단음'], '장단음 (길게·짧게 읽는 말)'],
 ] as const
 
-const POS_LABEL: Record<Pos, string> = { t: '위', b: '아래', l: '왼쪽', r: '오른쪽', w: '감싸기' }
+// 자리 이름: 위=머리, 아래=발, 왼쪽=변, 오른쪽=방, 감싸면=몸
+const POS_LABEL: Record<Pos, string> = { t: '머리', b: '발', l: '변', r: '방', w: '감싸기·몸' }
+
+// 보탬글자 설명 (public/data/parts.json) — 길게 누르면 보여줌
+let partsCache: Promise<Record<string, [string, string]>> | null = null
+const loadParts = () => {
+  partsCache ??= fetch(`${import.meta.env.BASE_URL}data/parts.json`).then((r) => r.json())
+  partsCache.catch(() => (partsCache = null))
+  return partsCache
+}
+
+function PartInfo({ tile, onClose }: { tile: string; onClose: () => void }) {
+  const [parts, setParts] = useState<Record<string, [string, string]> | null>(null)
+  useEffect(() => {
+    loadParts().then(setParts, () => setParts({}))
+  }, [])
+  // (人人戈)처럼 묶인 보탬글자는 한 글자씩 풀어서 설명 (같은 글자는 한 번만)
+  const chars = [...new Set(tile.replace(/[()]/g, ''))]
+  return createPortal(
+    <div className="part-info-backdrop" onPointerDown={onClose}>
+      <div className="part-info" role="dialog">
+        <div className="part-info-head">
+          <span className={isText(tile) ? 'txt' : 'hz'}>{tile}</span>
+          <span className="muted">보탬글자</span>
+        </div>
+        {chars.map((ch) => {
+          const info = parts?.[ch]
+          return (
+            <div key={ch} className="part-info-row">
+              <span className="hz">{ch}</span>
+              <div>
+                <b>{info ? info[0] : parts ? '획·부분' : '…'}</b>
+                {info?.[1] && <p>{info[1]}</p>}
+              </div>
+            </div>
+          )
+        })}
+        <p className="part-info-foot">눌러서 닫기</p>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+const LONG_PRESS = 450 // ms
 
 interface Props {
   target: Hanja
@@ -101,6 +145,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
   const [picked, setPicked] = useState<string | null>(null) // 탭 방식: 보탬글자를 고른 뒤 자리를 탭
   const [drag, setDrag] = useState<{ t: string; x: number; y: number } | null>(null)
   const [panel, setPanel] = useState<HTMLElement | null>(null)
+  const [info, setInfo] = useState<string | null>(null) // 길게 눌러 설명을 보는 보탬글자
 
   useEffect(() => setPanel(document.getElementById('add-panel')), [])
 
@@ -129,14 +174,25 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
     e.preventDefault()
     const start = { x: e.clientX, y: e.clientY }
     let moved = false
+    let long = false
+    const timer = setTimeout(() => {
+      long = true
+      setInfo(t)
+    }, LONG_PRESS)
     const move = (ev: PointerEvent) => {
-      if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 6) moved = true
+      if (long) return
+      if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 6) {
+        moved = true
+        clearTimeout(timer)
+      }
       if (moved) setDrag({ t, x: ev.clientX, y: ev.clientY })
     }
     const up = (ev: PointerEvent) => {
+      clearTimeout(timer)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       setDrag(null)
+      if (long) return // 길게 누른 것은 고르기·놓기로 치지 않음
       if (!moved) {
         setPicked((p) => (p === t ? null : t))
         return
@@ -196,7 +252,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
               ? `${target.base} + ${target.add.join(' + ')} = ${target.h}`
               : picked
                 ? `'${picked}'를 놓을 자리를 누르세요`
-                : '보탬글자를 알맞은 자리에 끌어다 놓으세요'}
+                : '보탬글자를 알맞은 자리에 끌어다 놓으세요 · 길게 누르면 설명'}
           </p>
         </div>
       )}
@@ -251,6 +307,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
                   className={`tile ${used ? 'used' : ''} ${picked === t ? 'picked' : ''} ${wrong?.tile === t ? 'shake' : ''}`}
                   disabled={used || phase !== 'play'}
                   onPointerDown={onPointerDown(t)}
+                  onContextMenu={(e) => e.preventDefault()}
                 >
                   <span className={isText(t) ? 'txt' : 'hz'}>{t}</span>
                 </button>
@@ -259,6 +316,8 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
           </div>,
           panel,
         )}
+
+      {info && <PartInfo tile={info} onClose={() => setInfo(null)} />}
 
       {drag && (
         <div className="ghost" style={{ left: drag.x, top: drag.y }}>
