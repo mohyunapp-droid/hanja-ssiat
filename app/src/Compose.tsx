@@ -125,7 +125,12 @@ function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
   )
 }
 
-const pairWords = (list: Pair[], sign: string) => list.map(([a, ra, b, rb]) => [`${a} ${sign} ${b}`, `${ra} ${sign} ${rb}`, ''] as Word)
+// 짝 단어: 두 단어의 뜻을 한 줄씩 ("寄與: …" 다음 줄 "貢獻: …")
+const pairWords = (list: Pair[], sign: string) =>
+  list.map(
+    ([a, ra, b, rb, ma, mb]) =>
+      [`${a} ${sign} ${b}`, `${ra} ${sign} ${rb}`, [ma && `${a}: ${ma}`, mb && `${b}: ${mb}`].filter(Boolean).join('\n')] as Word,
+  )
 const PAIR_LISTS = [
   ['pr', '뜻이 비슷한 단어', '≈'],
   ['op', '뜻이 반대인 단어', '↔'],
@@ -355,10 +360,10 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
           )}
           {target.id && target.id.length > 0 && <IdiomList title="사자성어" list={target.id} />}
           {target.sy && target.sy.length > 0 && (
-            <IdiomList title="유의어 (비슷한 뜻의 글자로 된 단어)" list={target.sy.map(([w, r]) => [w, r, ''] as Word)} />
+            <IdiomList title="유의어 (비슷한 뜻의 글자로 된 단어)" list={target.sy.map(([w, r, m]) => [w, r, m ?? ''] as Word)} />
           )}
           {target.an && target.an.length > 0 && (
-            <IdiomList title="상대어 (반대 뜻의 글자로 된 단어)" list={target.an.map(([w, r]) => [w, r, ''] as Word)} />
+            <IdiomList title="상대어 (반대 뜻의 글자로 된 단어)" list={target.an.map(([w, r, m]) => [w, r, m ?? ''] as Word)} />
           )}
           {PAIR_LISTS.map(([key, title, sign]) => {
             const list = target[key]

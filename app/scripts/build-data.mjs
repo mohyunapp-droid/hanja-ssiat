@@ -61,6 +61,16 @@ const lines = (dir) =>
     .flatMap((f) => readFileSync(join(dir, f), 'utf8').split('\n').map((l) => [f, l.trim()]))
     .filter(([, l]) => l && !l.startsWith('#'))
 
+// 단어 뜻: 예시 단어·사자성어의 뜻 + data/meanings/*.txt (단어|뜻, 직접 씀) → 유의어·상대어·짝 목록에 붙임
+const meaningOf = {}
+for (const g of groups) for (const c of g.c) for (const [w, , m] of c.w) if (m && !meaningOf[w]) meaningOf[w] = m
+for (const list of Object.values(idiomsByChar)) for (const [w, , m] of list) meaningOf[w] ??= m
+for (const [f, line] of lines(join(root, '..', 'data', 'meanings'))) {
+  const [w, m] = line.split('|')
+  if (!w || !m) throw new Error(`뜻 형식 오류: ${f} ${line}`)
+  meaningOf[w] = m
+}
+
 // 유의어·상대어(결합어): data/synonyms, data/antonyms (단어 읽기) → 구성 글자마다 연결
 const wordsByChar = (dir, label) => {
   const byChar = {}
@@ -70,7 +80,7 @@ const wordsByChar = (dir, label) => {
     if (!w || !r || w.length !== r.length) throw new Error(`${label} 형식 오류: ${f} ${line}`)
     if (seen.has(w)) continue
     seen.add(w)
-    for (const ch of new Set(w)) (byChar[ch] ??= []).push([w, r])
+    for (const ch of new Set(w)) (byChar[ch] ??= []).push([w, r, meaningOf[w] ?? ''])
   }
   return [byChar, seen.size]
 }
@@ -89,7 +99,7 @@ for (const [f, line] of lines(join(root, '..', 'data', 'pairs'))) {
   const id = kind + [a, b].sort().join('|')
   if (pairSeen.has(id)) continue
   pairSeen.add(id)
-  for (const ch of new Set(a + b)) (pairByChar[key][ch] ??= []).push([a, ra, b, rb])
+  for (const ch of new Set(a + b)) (pairByChar[key][ch] ??= []).push([a, ra, b, rb, meaningOf[a] ?? '', meaningOf[b] ?? ''])
 }
 
 // 약자: data/abbr/*.txt (기본체 약자[,약자…])

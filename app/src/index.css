@@ -350,7 +350,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 }
 .words .hz { font-size: 20px; }
 .words .rd { color: var(--accent); font-size: 14px; }
-.words .mn { color: var(--muted); font-size: 14px; }
+.words .mn { color: var(--muted); font-size: 14px; white-space: pre-line; } /* 짝 단어는 줄마다 한 단어씩 */
 .word-board { cursor: pointer; user-select: none; border: 1px solid transparent; transition: border-color 0.15s; }
 .word-board:hover { border-color: var(--accent); }
 .words .rd { display: inline-block; text-align: center; }
