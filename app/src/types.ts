@@ -34,7 +34,7 @@ export interface Hanja extends Omit<HanjaLite, 'base'> {
   op?: Pair[] // 뜻이 반대인 두 단어 짝
   ho?: Pair[] // 음이 같은 두 단어 짝
   ab?: string[] // 약자
-  ex?: [kind: '속음' | '단음' | '장음' | '다음', word: string, reading: string][]
+  ex?: [kind: '속음' | '단음' | '장음' | '다음', word: string, reading: string, meaning?: string][]
   note?: string
 }
 

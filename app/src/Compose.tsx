@@ -372,7 +372,7 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
           {EXTRA_LISTS.map(([kinds, title]) => {
             const list = (target.ex ?? []).filter(([k]) => (kinds as readonly string[]).includes(k))
             return list.length > 0 ? (
-              <IdiomList key={title} title={title} list={list.map(([k, w, r]) => [w, r, kinds.length > 1 ? k : ''] as Word)} />
+              <IdiomList key={title} title={title} list={list.map(([k, w, r, m]) => [w, r, [kinds.length > 1 ? k : '', m].filter(Boolean).join(' · ')] as Word)} />
             ) : null
           })}
           {target.note && <p className="note">{target.note}</p>}

@@ -121,7 +121,7 @@ for (const [f, line] of lines(join(root, '..', 'data', 'extra'))) {
   const words = rest.length === 2 ? [rest] : rest[0].split(/\s+/).map((x) => x.split(':'))
   for (const [w, r] of words) {
     if (!w || !r) throw new Error(`extra 형식 오류: ${f} ${line}`)
-    ;(extra[h] ??= []).push([kind, w, r])
+    ;(extra[h] ??= []).push([kind, w, r, meaningOf[w] ?? ''])
     extraCount++
   }
 }
