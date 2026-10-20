@@ -375,8 +375,15 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .sound .hun { font-size: 20px; font-weight: 700; }
 .sound .hint { color: var(--muted); font-size: 14px; }
 /* 힌트 속 (글자) 목록: 가나다순, 많으면 줄을 바꾸고 칸 안에서 스크롤 */
+.hint-words-box { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.word-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.word-tabs button { padding: 2px 9px; border-radius: 999px; font-size: 13px; color: var(--muted); border: 1px solid transparent; }
+.word-tabs button.on { color: var(--accent); border-color: var(--accent); }
 .hint-words { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; max-height: 96px; overflow-y: auto; }
-.hint-words li { padding: 4px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 15px; }
+.hint-words button { padding: 4px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 15px; }
+.hint-words button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hint-words .cnt { font-size: 11px; opacity: 0.7; }
+.clear-word { margin-left: 8px; font-size: 12px; color: var(--muted); }
 .sound-btn {
   padding: 7px 16px;
   border-radius: 999px;

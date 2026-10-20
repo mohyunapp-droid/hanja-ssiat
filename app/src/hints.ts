@@ -21,11 +21,15 @@ export const saveHint = (h: string, v: string) => {
 
 export const HINTS_CHANGED = 'hints-changed'
 
-// 힌트에 (글자)로 적은 부분만 모아 가나다순으로 (같은 글자는 한 번)
-export const bracketWords = (): string[] => {
-  const s = new Set<string>()
-  for (const h of hintedChars()) for (const m of loadHint(h).matchAll(/\(([^()]+)\)/g)) if (m[1].trim()) s.add(m[1].trim())
-  return [...s].sort((a, b) => a.localeCompare(b, 'ko'))
+// 힌트에 (글자)로 적은 부분만 모아 가나다순으로: [괄호 속 글자, 그 힌트를 적은 한자들][]
+export const bracketWords = (): [word: string, chars: string[]][] => {
+  const m = new Map<string, Set<string>>()
+  for (const h of hintedChars())
+    for (const [, raw] of loadHint(h).matchAll(/\(([^()]+)\)/g)) {
+      const w = raw.trim()
+      if (w) m.set(w, (m.get(w) ?? new Set()).add(h))
+    }
+  return [...m].map(([w, s]) => [w, [...s]] as [string, string[]]).sort((a, b) => a[0].localeCompare(b[0], 'ko'))
 }
 
 export const hintedChars = (): Set<string> => {

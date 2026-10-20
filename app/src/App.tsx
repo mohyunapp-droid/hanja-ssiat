@@ -51,14 +51,22 @@ export default function App() {
     return () => window.removeEventListener(HINTS_CHANGED, update)
   }, [])
 
+  // 아래 (글자)를 누르면 그 글자가 힌트에 들어간 한자만 가운데에 보여줌
+  const [word, setWord] = useState<string | null>(null)
+  const [wordInitial, setWordInitial] = useState<string | null>(null)
+  const wordChars = words.find(([w]) => w === word)?.[1] ?? null
+  const shownWords = wordInitial ? words.filter(([w]) => initialOf(w) === wordInitial) : words
+  const wordTabs = TABS.filter((t) => words.some(([w]) => initialOf(w) === t))
+
   const byGrade = (h: HanjaLite) => !grade || h.gr === grade
   const group = groups?.find((g) => g.g === groupId) ?? null
 
-  const visible = useMemo(
-    () => (group ? group.c : (groups ?? []).flatMap((g) => g.c)).filter(byGrade),
+  const visible = useMemo(() => {
+    const all = (groups ?? []).flatMap((g) => g.c)
+    const list = wordChars ? all.filter((h) => wordChars.includes(h.h)) : group ? group.c : all
+    return list.filter(byGrade)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groups, group, grade],
-  )
+  }, [groups, group, grade, wordChars])
 
   // 초성을 고르면 그 초성으로 시작하는 씨앗만 음 가나다순, 아니면 번호순
   const seeds = useMemo(() => {
@@ -82,10 +90,18 @@ export default function App() {
   if (!groups) return <p className="empty">한자 목록을 불러오는 중…</p>
 
   const pickSeed = (g: Group) => {
-    setGroupId(g.g === groupId ? null : g.g)
+    setGroupId(g.g === groupId && !word ? null : g.g)
+    setWord(null)
     setSelected(null)
     setQuiz(false)
   }
+  // 같은 (글자)를 다시 누르면 해제
+  const pickWord = (w: string) => {
+    setWord(w === word ? null : w)
+    setSelected(null)
+    setQuiz(false)
+  }
+  const showGroup = group && !wordChars
   const pickGrade = (g: string | null) => {
     setGrade(g)
     setSelected(null)
@@ -162,7 +178,12 @@ export default function App() {
         ) : (
           <>
             <div className="board-head">
-              {group ? (
+              {wordChars ? (
+                <>
+                  힌트 속 <b className="tag">({word})</b> 글자 {visible.length}자
+                  <button className="clear-word" onClick={() => setWord(null)}>✕ 해제</button>
+                </>
+              ) : group ? (
                 <>
                   <span className="tag">{group.g}</span> 씨앗글자 <b className="hz">{group.c[0].h}</b>에서 나온 글자
                 </>
@@ -172,7 +193,7 @@ export default function App() {
             </div>
             {visible.length === 0 ? (
               <p className="empty">이 급수에 해당하는 글자가 없어요.</p>
-            ) : group ? (
+            ) : showGroup ? (
               // 씨앗글자와 음이 같은 글자는 첫 줄, 음이 다르면 음별로 다음 줄
               <div className="rows">
                 {rowsByEum(group.c[0].e, visible).map((row) => (
@@ -215,11 +236,26 @@ export default function App() {
             )}
           </>
         ) : words.length > 0 ? (
-          <ul className="hint-words" aria-label="힌트 속 (글자) 목록">
-            {words.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
+          <div className="hint-words-box">
+            {/* 씨앗글자처럼 초성으로 거르기 */}
+            <div className="word-tabs" aria-label="초성으로 거르기">
+              <button className={!wordInitial ? 'on' : ''} onClick={() => setWordInitial(null)}>전체</button>
+              {wordTabs.map((t) => (
+                <button key={t} className={wordInitial === t ? 'on' : ''} onClick={() => setWordInitial(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <ul className="hint-words" aria-label="힌트 속 (글자) 목록">
+              {shownWords.map(([w, chars]) => (
+                <li key={w}>
+                  <button className={w === word ? 'on' : ''} onClick={() => pickWord(w)}>
+                    {w} <span className="cnt">{chars.length}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <span className="hint">글자를 누르면 뜻과 음을 볼 수 있어요</span>
         )}
