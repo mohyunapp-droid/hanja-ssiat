@@ -16,6 +16,16 @@ export const saveHint = (h: string, v: string) => {
   } catch {
     /* 저장 불가 환경은 무시 */
   }
+  window.dispatchEvent(new Event(HINTS_CHANGED))
+}
+
+export const HINTS_CHANGED = 'hints-changed'
+
+// 힌트에 (글자)로 적은 부분만 모아 가나다순으로 (같은 글자는 한 번)
+export const bracketWords = (): string[] => {
+  const s = new Set<string>()
+  for (const h of hintedChars()) for (const m of loadHint(h).matchAll(/\(([^()]+)\)/g)) if (m[1].trim()) s.add(m[1].trim())
+  return [...s].sort((a, b) => a.localeCompare(b, 'ko'))
 }
 
 export const hintedChars = (): Set<string> => {

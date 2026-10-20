@@ -4,6 +4,7 @@ import { loadIndex } from './data'
 import GroupCompose from './GroupCompose'
 import HanjaCard from './HanjaCard'
 import Quiz from './Quiz'
+import { bracketWords, HINTS_CHANGED } from './hints'
 
 const INITIALS = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
 const TABS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
@@ -41,6 +42,14 @@ export default function App() {
   }, [])
 
   useEffect(() => setShowSound(false), [selected])
+
+  // 힌트 속 (글자) 목록: 힌트를 고치면 바로 다시 모음
+  const [words, setWords] = useState(bracketWords)
+  useEffect(() => {
+    const update = () => setWords(bracketWords())
+    window.addEventListener(HINTS_CHANGED, update)
+    return () => window.removeEventListener(HINTS_CHANGED, update)
+  }, [])
 
   const byGrade = (h: HanjaLite) => !grade || h.gr === grade
   const group = groups?.find((g) => g.g === groupId) ?? null
@@ -205,6 +214,12 @@ export default function App() {
               </button>
             )}
           </>
+        ) : words.length > 0 ? (
+          <ul className="hint-words" aria-label="힌트 속 (글자) 목록">
+            {words.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
         ) : (
           <span className="hint">글자를 누르면 뜻과 음을 볼 수 있어요</span>
         )}
