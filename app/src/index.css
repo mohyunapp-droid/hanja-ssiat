@@ -525,6 +525,9 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
   color: var(--muted);
 }
 .writepad-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+/* 점선 보기 · 굵기 · 지우기 한 줄 (좁으면 줄바꿈) */
+.writepad-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.writepad-weight { font: inherit; cursor: pointer; }
 
 /* 사자성어 */
 .idioms { width: 100%; display: flex; flex-direction: column; gap: 8px; }
