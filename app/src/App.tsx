@@ -178,7 +178,12 @@ export default function App() {
             key={selected.h}
             group={groups.find((g) => g.g === selected.g)!}
             h={selected.h}
-            onBack={() => openUnit(null)}
+            onBack={() => {
+              // 목록으로 돌아가면 지금 보던 글자가 들어 있는 씨앗글자 그룹을 보여줌
+              setGroupId(selected.g)
+              setWord(null)
+              openUnit(null)
+            }}
             onQuiz={() => setQuiz(true)}
             onOpenChar={(ch) => {
               const next = groups.flatMap((g) => g.c).find((c) => c.h === ch)

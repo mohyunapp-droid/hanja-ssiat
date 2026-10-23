@@ -436,7 +436,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   font-weight: 700;
   box-shadow: var(--shadow);
 }
-.compose-top .back { position: absolute; }
+/* ← 목록 · ← 이전 글자는 왼쪽에 나란히, 문제풀기는 가운데 */
+.compose-top .compose-nav { position: absolute; left: 0; }
 .compose-top { position: relative; }
 
 .quiz { display: flex; flex-direction: column; gap: 12px; }
