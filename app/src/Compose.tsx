@@ -195,6 +195,13 @@ function PartInfo({ tile, onClose }: { tile: string; onClose: () => void }) {
 
 const LONG_PRESS = 450 // ms
 
+// 보탬글자 칸 아래 이름: 氵 → 삼수변, (人人戈) → 사람 인+창 과 ("달 월 / 육달월"은 앞쪽만)
+const tileName = (tile: string, parts: Record<string, [string, string]>) =>
+  [...new Set(tile.replace(/[()]/g, ''))]
+    .map((ch) => parts[ch]?.[0].split(' / ')[0])
+    .filter(Boolean)
+    .join('+')
+
 interface Props {
   target: Hanja
   pool: Hanja[]
@@ -220,9 +227,9 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
   const [partsMap, setPartsMap] = useState<Record<string, [string, string]>>({})
   const [extraHun, setExtraHun] = useState<Record<string, string>>({})
   useEffect(() => {
+    loadParts().then(setPartsMap, () => {}) // 보탬글자 이름은 문제풀기에서도 보여줌
     if (onSolved) return // 문제풀기에서는 상세 정보를 보여주지 않음
     loadCharMap().then(setChars, () => {})
-    loadParts().then(setPartsMap, () => {})
     loadExtraHun().then(setExtraHun, () => {})
   }, [onSolved])
   const wordCtx = useMemo(
@@ -387,15 +394,17 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
             {tiles.map((t) => {
               const used = placed.includes(t)
               return (
-                <button
-                  key={t}
-                  className={`tile ${used ? 'used' : ''} ${picked === t ? 'picked' : ''} ${wrong?.tile === t ? 'shake' : ''}`}
-                  disabled={used || phase !== 'play'}
-                  onPointerDown={onPointerDown(t)}
-                  onContextMenu={(e) => e.preventDefault()}
-                >
-                  <span className={isText(t) ? 'txt' : 'hz'}>{t}</span>
-                </button>
+                <div key={t} className={`tile-wrap ${used ? 'used' : ''}`}>
+                  <button
+                    className={`tile ${used ? 'used' : ''} ${picked === t ? 'picked' : ''} ${wrong?.tile === t ? 'shake' : ''}`}
+                    disabled={used || phase !== 'play'}
+                    onPointerDown={onPointerDown(t)}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    <span className={isText(t) ? 'txt' : 'hz'}>{t}</span>
+                  </button>
+                  <span className="tile-name">{tileName(t, partsMap)}</span>
+                </div>
               )
             })}
           </div>,
