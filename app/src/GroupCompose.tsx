@@ -10,6 +10,9 @@ interface Props {
   onQuiz?: () => void
   onSolved?: () => void
   onMiss?: () => void
+  onOpenChar?: (ch: string) => void
+  prevChar?: string
+  onPrev?: () => void
 }
 
 // 조합 화면에 필요한 상세 정보를 불러온 뒤 Compose 를 띄움

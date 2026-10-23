@@ -52,7 +52,34 @@ const WordCtx = createContext<{
   chars: Map<string, CharInfo>
   parts: Record<string, [string, string]>
   hun: Record<string, string> // 1급 책에 없는 글자의 훈음
+  open?: (ch: string) => void // 단어 속 한자를 누르면 그 한자 유닛으로 이동
 } | null>(null)
+
+// 단어를 한 글자씩: 앱에 있는 다른 한자는 눌러서 그 유닛으로 이동 (나머지를 누르면 원래대로 음 보기)
+function WordText({ w }: { w: string }) {
+  const ctx = useContext(WordCtx)
+  return (
+    <span className="hz">
+      {[...w].map((ch, i) =>
+        ctx?.open && ch !== ctx.target && ctx.chars.has(ch) ? (
+          <button
+            key={i}
+            className="word-link"
+            onClick={(e) => {
+              e.stopPropagation()
+              ctx.open!(ch)
+            }}
+            aria-label={`${ch} 한자 유닛으로 이동`}
+          >
+            {ch}
+          </button>
+        ) : (
+          ch
+        ),
+      )}
+    </span>
+  )
+}
 const isHanChar = (ch: string) => /\p{Script=Han}/u.test(ch)
 const short = (hun: string[]) => hun[0] ?? ''
 
@@ -112,7 +139,7 @@ function WordBoard({ word: [w, r, m], grade }: { word: Word; grade?: string }) {
 
   return (
     <li className="word-board" role="button" tabIndex={0} onClick={flip} onKeyDown={(e) => e.key === 'Enter' && flip()}>
-      <span className="hz">{w}</span>
+      <WordText w={w} />
       <span className={`rd ${shown ? '' : 'hidden'} ${spinning ? 'spin' : ''}`}>{shown ? r : '?'}</span>
       {(m || shown) && (
         <div className="wb-side">
@@ -209,9 +236,12 @@ interface Props {
   onQuiz?: () => void
   onSolved?: () => void // 문제풀기 모드: 완성되면 호출, 상세 정보는 숨김
   onMiss?: () => void
+  onOpenChar?: (ch: string) => void // 단어 속 한자 유닛으로 이동
+  prevChar?: string // 이동하기 전에 보던 한자 (← 버튼)
+  onPrev?: () => void
 }
 
-export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss }: Props) {
+export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss, onOpenChar, prevChar, onPrev }: Props) {
   const tiles = useMemo(() => makeTiles(target, pool), [target, pool])
   // 정답 자리 + 비어 있는 위·아래·좌·우는 함정 칸(part: null)으로 채워 항상 4칸을 보여줌
   const slots: { part: string | null; pos: Pos }[] = target.add.map((part, i) => ({ part, pos: target.pos[i] ?? 't' }))
@@ -233,8 +263,8 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
     loadExtraHun().then(setExtraHun, () => {})
   }, [onSolved])
   const wordCtx = useMemo(
-    () => (chars ? { target: target.h, chars, parts: partsMap, hun: extraHun } : null),
-    [chars, partsMap, extraHun, target.h],
+    () => (chars ? { target: target.h, chars, parts: partsMap, hun: extraHun, open: onOpenChar } : null),
+    [chars, partsMap, extraHun, target.h, onOpenChar],
   )
 
   useEffect(() => setPanel(document.getElementById('add-panel')), [])
@@ -319,7 +349,14 @@ export default function Compose({ target, pool, onBack, onQuiz, onSolved, onMiss
     <div className="compose">
       {!onSolved && (
         <div className="compose-top">
-          <button className="back" onClick={onBack}>← 목록</button>
+          <span className="compose-nav">
+            <button className="back" onClick={onBack}>← 목록</button>
+            {prevChar && (
+              <button className="back prev-char" onClick={onPrev} aria-label={`이전 글자 ${prevChar}로 돌아가기`}>
+                ← <span className="hz">{prevChar}</span>
+              </button>
+            )}
+          </span>
           <button className="quiz-btn" onClick={onQuiz}>✏️ 문제풀기</button>
         </div>
       )}

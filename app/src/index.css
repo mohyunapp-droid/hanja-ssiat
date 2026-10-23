@@ -564,3 +564,9 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 .wb-parts .hz { font-size: 16px; }
 .wb-parts b { font-weight: 600; }
 .wb-line { display: block; color: var(--muted); padding-left: 2px; }
+
+/* 단어 속 한자: 누르면 그 한자 유닛으로 이동 */
+.word-link { font: inherit; color: inherit; padding: 0; background: none; border: none; cursor: pointer; text-decoration: underline dotted var(--accent); text-underline-offset: 4px; }
+.word-link:hover { color: var(--accent); }
+.compose-nav { display: flex; align-items: center; gap: 6px; }
+.prev-char .hz { font-size: 16px; }

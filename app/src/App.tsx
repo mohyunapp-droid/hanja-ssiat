@@ -34,6 +34,7 @@ export default function App() {
   const [initial, setInitial] = useState<string | null>(null)
   const [pickingInitial, setPickingInitial] = useState(false)
   const [showSound, setShowSound] = useState(false)
+  const [trail, setTrail] = useState<HanjaLite[]>([]) // 단어 속 한자로 이동해 온 길 (← 이전 글자)
 
   useEffect(() => {
     loadIndex()
@@ -89,22 +90,27 @@ export default function App() {
   if (loadError) return <p className="empty">한자 목록을 불러오지 못했어요. 새로고침해 주세요.</p>
   if (!groups) return <p className="empty">한자 목록을 불러오는 중…</p>
 
+  // 목록에서 한자 유닛을 열거나 닫으면 이동해 온 길은 새로 시작
+  const openUnit = (h: HanjaLite | null) => {
+    setSelected(h)
+    setTrail([])
+  }
   const pickSeed = (g: Group) => {
     setGroupId(g.g === groupId && !word ? null : g.g)
     setWord(null)
-    setSelected(null)
+    openUnit(null)
     setQuiz(false)
   }
   // 같은 (글자)를 다시 누르면 해제
   const pickWord = (w: string) => {
     setWord(w === word ? null : w)
-    setSelected(null)
+    openUnit(null)
     setQuiz(false)
   }
   const showGroup = group && !wordChars
   const pickGrade = (g: string | null) => {
     setGrade(g)
-    setSelected(null)
+    openUnit(null)
     setQuiz(false)
   }
   const pickInitial = (i: string | null) => {
@@ -172,8 +178,20 @@ export default function App() {
             key={selected.h}
             group={groups.find((g) => g.g === selected.g)!}
             h={selected.h}
-            onBack={() => setSelected(null)}
+            onBack={() => openUnit(null)}
             onQuiz={() => setQuiz(true)}
+            onOpenChar={(ch) => {
+              const next = groups.flatMap((g) => g.c).find((c) => c.h === ch)
+              if (!next) return
+              setTrail((t) => [...t, selected])
+              setSelected(next)
+              document.querySelector('.board')?.scrollTo({ top: 0 })
+            }}
+            prevChar={trail.at(-1)?.h}
+            onPrev={() => {
+              setSelected(trail.at(-1) ?? null)
+              setTrail((t) => t.slice(0, -1))
+            }}
           />
         ) : (
           <>
@@ -199,7 +217,7 @@ export default function App() {
                 {rowsByEum(group.c[0].e, visible).map((row) => (
                   <div key={row[0].e} className="row">
                     {row.map((h) => (
-                      <HanjaCard key={h.h} h={h} onOpen={() => setSelected(h)} />
+                      <HanjaCard key={h.h} h={h} onOpen={() => openUnit(h)} />
                     ))}
                   </div>
                 ))}
@@ -207,7 +225,7 @@ export default function App() {
             ) : (
               <div className="grid">
                 {visible.map((h) => (
-                  <HanjaCard key={h.h} h={h} onOpen={() => setSelected(h)} />
+                  <HanjaCard key={h.h} h={h} onOpen={() => openUnit(h)} />
                 ))}
               </div>
             )}
