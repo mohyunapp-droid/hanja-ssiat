@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GRADES, gradeLabel, type Group, type HanjaLite } from './types'
 import { loadIndex } from './data'
 import GroupCompose from './GroupCompose'
 import HanjaCard from './HanjaCard'
 import Quiz from './Quiz'
-import { bracketWords, HINTS_CHANGED } from './hints'
+import { bracketWords, hintedChars, HINTS_CHANGED } from './hints'
 
 const INITIALS = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
 const TABS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
@@ -44,13 +44,28 @@ export default function App() {
 
   useEffect(() => setShowSound(false), [selected])
 
-  // 힌트 속 (글자) 목록: 힌트를 고치면 바로 다시 모음
+  // 힌트 속 (글자) 목록과 힌트를 적은 한자 목록: 힌트를 고치면 바로 다시 모음
   const [words, setWords] = useState(bracketWords)
+  const [hinted, setHinted] = useState(hintedChars)
   useEffect(() => {
-    const update = () => setWords(bracketWords())
+    const update = () => {
+      setWords(bracketWords())
+      setHinted(hintedChars())
+    }
     window.addEventListener(HINTS_CHANGED, update)
     return () => window.removeEventListener(HINTS_CHANGED, update)
   }, [])
+
+  // 앱을 켜면 씨앗 목록을 힌트가 비어 있는 첫 글자 위치로 맞춤
+  const seedListRef = useRef<HTMLDivElement>(null)
+  const scrolledToEmpty = useRef(false)
+  useEffect(() => {
+    const list = seedListRef.current
+    if (!groups || !list || scrolledToEmpty.current) return
+    scrolledToEmpty.current = true
+    const el = list.querySelector<HTMLElement>('.seed:not(.hinted)')
+    if (el) list.scrollTop += el.getBoundingClientRect().top - list.getBoundingClientRect().top - 4
+  }, [groups])
 
   // 아래 (글자)를 누르면 그 글자가 힌트에 들어간 한자만 가운데에 보여줌
   const [word, setWord] = useState<string | null>(null)
@@ -152,13 +167,13 @@ export default function App() {
             ))}
           </div>
         ) : (
-          <div className="seed-list">
+          <div className="seed-list" ref={seedListRef}>
             {seeds.map((g) => {
               const has = g.c.some(byGrade)
               return (
                 <button
                   key={g.g}
-                  className={`seed ${g.g === groupId ? 'on' : ''} ${has ? '' : 'dim'}`}
+                  className={`seed ${g.g === groupId ? 'on' : ''} ${has ? '' : 'dim'} ${hinted.has(g.c[0].h) ? 'hinted' : ''}`}
                   onClick={() => pickSeed(g)}
                 >
                   <span className="no">{initial ? g.c[0].e : g.g}</span>
