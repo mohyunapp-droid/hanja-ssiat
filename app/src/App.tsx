@@ -113,6 +113,17 @@ export default function App() {
     openUnit(null)
     setQuiz(false)
   }
+  // 전체: 처음 열었을 때처럼 모든 씨앗글자·한자 유닛을 보여줌 (고른 그룹·초성·힌트 글자 모두 해제)
+  const resetAll = () => {
+    pickGrade(null)
+    setGroupId(null)
+    setWord(null)
+    setWordInitial(null)
+    setInitial(null)
+    setPickingInitial(false)
+    document.querySelector('.board')?.scrollTo({ top: 0 })
+    document.querySelector('.seed-list')?.scrollTo({ top: 0 })
+  }
   const pickInitial = (i: string | null) => {
     setInitial(i)
     setPickingInitial(false)
@@ -121,7 +132,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="grades" aria-label="한자급수">
-        <button className={!grade ? 'on' : ''} onClick={() => pickGrade(null)}>전체</button>
+        <button className={!grade ? 'on' : ''} onClick={resetAll}>전체</button>
         {GRADES.map((g) => (
           <button key={g} className={grade === g ? 'on' : ''} onClick={() => pickGrade(g)}>
             {gradeLabel(g)}
