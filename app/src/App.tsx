@@ -4,7 +4,7 @@ import { loadIndex } from './data'
 import GroupCompose from './GroupCompose'
 import HanjaCard from './HanjaCard'
 import Quiz from './Quiz'
-import { bracketWords, HINTS_CHANGED } from './hints'
+import { HINTS_CHANGED, markedWords, type MarkKind } from './hints'
 
 const INITIALS = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
 const TABS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
@@ -54,18 +54,22 @@ export default function App() {
     list.scrollTo({ top, behavior: 'smooth' })
   }, [groupId, initial, pickingInitial])
 
-  // 힌트 속 (글자) 목록: 힌트를 고치면 바로 다시 모음
-  const [words, setWords] = useState(bracketWords)
+  // 힌트 속 (글자)·<숨은뜻> 목록: 힌트를 고치면 바로 다시 모음
+  const loadLists = () => ({ paren: markedWords('paren'), hidden: markedWords('hidden') })
+  const [lists, setLists] = useState(loadLists)
   useEffect(() => {
-    const update = () => setWords(bracketWords())
+    const update = () => setLists(loadLists())
     window.addEventListener(HINTS_CHANGED, update)
     return () => window.removeEventListener(HINTS_CHANGED, update)
   }, [])
+  const [kind, setKind] = useState<MarkKind>('paren') // 아래 영역에서 보고 있는 탭
+  const words = lists[kind]
 
-  // 아래 (글자)를 누르면 그 글자가 힌트에 들어간 한자만 가운데에 보여줌
-  const [word, setWord] = useState<string | null>(null)
+  // 아래 목록의 글자를 누르면 그 글자가 힌트에 들어간 한자만 가운데에 보여줌
+  const [word, setWord] = useState<{ kind: MarkKind; w: string } | null>(null)
   const [wordInitial, setWordInitial] = useState<string | null>(null)
-  const wordChars = words.find(([w]) => w === word)?.[1] ?? null
+  const wordChars = word ? (lists[word.kind].find(([w]) => w === word.w)?.[1] ?? null) : null
+  const isPicked = (w: string) => word?.kind === kind && word.w === w
   const shownWords = wordInitial ? words.filter(([w]) => initialOf(w) === wordInitial) : words
   const wordTabs = TABS.filter((t) => words.some(([w]) => initialOf(w) === t))
 
@@ -111,9 +115,9 @@ export default function App() {
     openUnit(null)
     setQuiz(false)
   }
-  // 같은 (글자)를 다시 누르면 해제
+  // 같은 글자를 다시 누르면 해제
   const pickWord = (w: string) => {
-    setWord(w === word ? null : w)
+    setWord(isPicked(w) ? null : { kind, w })
     openUnit(null)
     setQuiz(false)
   }
@@ -224,7 +228,12 @@ export default function App() {
             <div className="board-head">
               {wordChars ? (
                 <>
-                  힌트 속 <b className="tag">({word})</b> 글자 {visible.length}자
+                  {word?.kind === 'hidden' ? (
+                    <>숨은뜻 <b className="tag hidden-tag">{word.w}</b></>
+                  ) : (
+                    <>힌트 속 <b className="tag">({word?.w})</b></>
+                  )}{' '}
+                  글자 {visible.length}자
                   <button className="clear-word" onClick={() => setWord(null)}>✕ 해제</button>
                 </>
               ) : group ? (
@@ -279,8 +288,31 @@ export default function App() {
               </button>
             )}
           </>
-        ) : words.length > 0 ? (
+        ) : lists.paren.length + lists.hidden.length > 0 ? (
           <div className="hint-words-box">
+            {/* (글자) / 숨은뜻 탭 */}
+            <div className="kind-tabs" role="tablist">
+              {(['paren', 'hidden'] as const).map((k) => (
+                <button
+                  key={k}
+                  role="tab"
+                  aria-selected={kind === k}
+                  className={kind === k ? 'on' : ''}
+                  onClick={() => {
+                    setKind(k)
+                    setWordInitial(null)
+                  }}
+                >
+                  {k === 'paren' ? '(글자)' : '숨은뜻'} <span className="cnt">{lists[k].length}</span>
+                </button>
+              ))}
+            </div>
+            {words.length === 0 ? (
+              <span className="hint">
+                {kind === 'hidden' ? '힌트에 <반드시>처럼 적으면 여기에 모여요' : '힌트에 (목)처럼 적으면 여기에 모여요'}
+              </span>
+            ) : (
+              <>
             {/* 씨앗글자처럼 초성으로 거르기 */}
             <div className="word-tabs" aria-label="초성으로 거르기">
               <button className={!wordInitial ? 'on' : ''} onClick={() => setWordInitial(null)}>전체</button>
@@ -290,15 +322,17 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <ul className="hint-words" aria-label="힌트 속 (글자) 목록">
+            <ul className={`hint-words ${kind}`} aria-label={kind === 'hidden' ? '숨은뜻 목록' : '힌트 속 (글자) 목록'}>
               {shownWords.map(([w, chars]) => (
                 <li key={w}>
-                  <button className={w === word ? 'on' : ''} onClick={() => pickWord(w)}>
+                  <button className={isPicked(w) ? 'on' : ''} onClick={() => pickWord(w)}>
                     {w} <span className="cnt">{chars.length}</span>
                   </button>
                 </li>
               ))}
             </ul>
+              </>
+            )}
           </div>
         ) : (
           <span className="hint">글자를 누르면 뜻과 음을 볼 수 있어요</span>

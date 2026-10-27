@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gradeLabel, type HanjaLite } from './types'
 import { loadHint, saveHint } from './hints'
+import HintText from './HintText'
 
 export default function HanjaCard({ h, onOpen }: { h: HanjaLite; onOpen: () => void }) {
   const [hint, setHint] = useState(() => loadHint(h.h))
@@ -52,7 +53,7 @@ export default function HanjaCard({ h, onOpen }: { h: HanjaLite; onOpen: () => v
         <span className="hz big">{h.h}</span>
         <span className={`eum ${shown ? 'shown' : ''}`}>{shown ? h.e2 ? `${h.e}(${h.e2})` : h.e : '?'}</span>
         <span className="gr">{gradeLabel(h.gr)}</span>
-        {hint && !editing && <span className="hint-text">{hint}</span>}
+        {hint && !editing && <HintText className="hint-text" text={hint} />}
         <button
           className={`icon eum-btn ${shown ? 'on' : ''}`}
           aria-label={shown ? '음 숨기기' : '음 보기'}

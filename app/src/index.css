@@ -571,3 +571,13 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 .word-link:hover { color: var(--accent); }
 .compose-nav { display: flex; align-items: center; gap: 6px; }
 .prev-char .hz { font-size: 16px; }
+
+/* 숨은뜻: 힌트에 <반드시>처럼 적은 부분 */
+.hint-hidden { color: #2a7a68; font-weight: 700; }
+.hidden-tag { background: #2a7a6822; color: #2a7a68; }
+.kind-tabs { display: flex; gap: 4px; }
+.kind-tabs button { padding: 3px 12px; border-radius: 999px; font-size: 13px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); }
+.kind-tabs button.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+.kind-tabs .cnt { font-size: 11px; opacity: 0.75; }
+.hint-words.hidden button { border-color: #2a7a6855; color: #2a7a68; }
+.hint-words.hidden button.on { background: #2a7a68; border-color: #2a7a68; color: #fff; }

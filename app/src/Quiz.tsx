@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadExam, EXAM_GUIDE, type ExamQ } from './exam'
 import GroupCompose from './GroupCompose'
+import HintText from './HintText'
 import { hintedChars, loadHint } from './hints'
 import type { Group, HanjaLite as Hanja } from './types'
 
@@ -171,7 +172,7 @@ export default function Quiz({ groups, onExit }: { groups: Group[]; onExit: () =
       <div className="progress-bar">
         <span style={{ width: `${(idx / questions.length) * 100}%` }} />
       </div>
-      <p className="quiz-hint">💡 {loadHint(q.h)}</p>
+      <p className="quiz-hint">💡 <HintText text={loadHint(q.h)} /></p>
       {stepLabel && <p className="step-label">{stepLabel}</p>}
 
       {step === 'compose' ? (
