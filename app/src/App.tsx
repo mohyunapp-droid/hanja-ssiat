@@ -44,6 +44,16 @@ export default function App() {
 
   useEffect(() => setShowSound(false), [selected])
 
+  // 고른 씨앗글자가 왼쪽 목록의 가운데에 오도록 목록만 스크롤 (페이지 전체는 움직이지 않음)
+  useEffect(() => {
+    const list = document.querySelector<HTMLElement>('.seed-list')
+    const on = list?.querySelector<HTMLElement>('.seed.on')
+    if (!list || !on) return
+    const offset = on.getBoundingClientRect().top - list.getBoundingClientRect().top
+    const top = list.scrollTop + offset - (list.clientHeight - on.offsetHeight) / 2
+    list.scrollTo({ top, behavior: 'smooth' })
+  }, [groupId, initial, pickingInitial])
+
   // 힌트 속 (글자) 목록: 힌트를 고치면 바로 다시 모음
   const [words, setWords] = useState(bracketWords)
   useEffect(() => {
